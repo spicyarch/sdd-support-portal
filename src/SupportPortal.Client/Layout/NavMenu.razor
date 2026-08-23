@@ -1,6 +1,7 @@
 ﻿@implements IDisposable
 @inject SupportPortalApiClient Api
 @inject DevelopmentIdentityState Identity
+@inject IConfiguration Configuration
 
 <div class="nav-toggle-row">
     <span class="nav-label">Navigate</span>
@@ -39,6 +40,8 @@
 
     private bool CanAdministrate => currentUser?.Role is "GlobalAdministrator" or "TeamAdministrator";
 
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
     protected override async Task OnInitializedAsync()
     {
         Identity.Changed += OnIdentityChanged;
@@ -52,6 +55,13 @@
 
     private async Task LoadCurrentUser()
     {
+        if (!IsEntraMode && string.IsNullOrWhiteSpace(Identity.IdentityKey))
+        {
+            currentUser = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
         try
         {
             currentUser = await Api.GetCurrentUserAsync();
