@@ -1,0 +1,96 @@
+@page "/requests"
+@implements IAsyncDisposable
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>My requests | Support Portal</PageTitle>
+
+<section class="page-intro compact-intro"><div><span class="eyebrow">Support requests</span><h1>What your team is working through.</h1><p>Every request keeps its context, status, and conversation together.</p></div>@if (canCreateRequests) { <a class="button button-primary" href="/new-request">New request <span aria-hidden="true">+</span></a> }</section>
+
+@if (loading)
+{
+    <div class="loading-panel" role="status">Loading requests...</div>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-error" role="alert">@error</div>
+}
+else if (page?.Items.Count is 0 or null)
+{
+    <div class="empty-state"><strong>Your queue is clear.</strong><span>New requests from your team will appear here.</span><a class="text-link" href="/new-request">Create the first request <span aria-hidden="true">→</span></a></div>
+}
+else
+{
+    <div class="request-table" role="table" aria-label="Support requests"><div class="request-table-header" role="row"><span>Request</span><span>Status</span><span>Priority</span><span>Updated</span></div>
+        @foreach (var request in page!.Items)
+        {
+            <a class="request-row" role="row" href="/requests/@request.RequestId"><span class="request-main"><span class="request-reference">@request.Reference</span><strong>@request.Subject</strong></span><span><span class="status-pill status-@request.Status.ToLowerInvariant()">@request.Status</span></span><span class="priority-@request.Priority.ToLowerInvariant()">@request.Priority</span><span class="request-time">@request.UpdatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</span></a>
+        }
+    </div>
+}
+
+@code {
+    private SupportRequestPageResponse? page;
+    private CurrentUserResponse? currentUser;
+    private bool loading = true;
+    private string? error;
+
+    private bool canCreateRequests => currentUser?.Role is "TeamUser" or "TeamAdministrator";
+
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            currentUser = await Api.GetCurrentUserAsync();
+            page = await Api.ListRequestsAsync();
+            _ = RefreshLoop();
+        }
+        catch
+        {
+            error = "We could not load requests. Try again in a moment.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task RefreshLoop()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(refreshCancellation.Token))
+            {
+                var refreshed = await Api.ListRequestsAsync(page?.RowVersion, refreshCancellation.Token);
+                if (refreshed is not null)
+                {
+                    page = refreshed;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (refreshCancellation.IsCancellationRequested)
+        {
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        refreshCancellation.Cancel();
+        refreshCancellation.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    private readonly CancellationTokenSource refreshCancellation = new();
+}

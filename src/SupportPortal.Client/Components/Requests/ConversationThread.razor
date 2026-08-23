@@ -1,0 +1,11 @@
+<div class="conversation-thread" aria-label="Request conversation">
+    @foreach (var message in Messages)
+    {
+        <article class="message-card @(message.AuthorRole.Contains("Global", StringComparison.Ordinal) ? "message-support" : "message-team")"><div class="message-meta"><strong>@RoleDisplay.Format(message.AuthorRole)</strong><time datetime="@message.CreatedAt.ToString("O")">@message.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</time></div><p>@message.Body</p></article>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<MessageResponse> Messages { get; set; } = [];
+}

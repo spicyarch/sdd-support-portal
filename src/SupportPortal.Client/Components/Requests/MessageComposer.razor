@@ -1,0 +1,27 @@
+<EditForm Model="model" OnValidSubmit="Submit" class="message-composer"><label for="message">Reply to support</label><InputTextArea id="message" @bind-Value="model.Body" rows="4" placeholder="Add useful context for the next person on this request." disabled="@Disabled" /><ValidationMessage For="@(() => model.Body)" />@if (!string.IsNullOrWhiteSpace(Error)) { <div class="alert alert-error" role="alert">@Error</div> }<div class="composer-actions"><span>Messages are kept in the request history.</span><button class="button button-primary" type="submit" disabled="@Disabled">@(Disabled ? "Sending..." : "Send reply") <span aria-hidden="true">→</span></button></div></EditForm>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnSubmit { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public string? Error { get; set; }
+
+    private readonly MessageModel model = new();
+
+    private async Task Submit()
+    {
+        await OnSubmit.InvokeAsync(model.Body);
+        model.Body = string.Empty;
+    }
+
+    private sealed class MessageModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(10000, MinimumLength = 1)]
+        public string Body { get; set; } = string.Empty;
+    }
+}

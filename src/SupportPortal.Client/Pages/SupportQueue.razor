@@ -1,0 +1,142 @@
+@page "/queue"
+@implements IAsyncDisposable
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>Support queue | Support Portal</PageTitle>
+
+<section class="page-intro compact-intro"><div><span class="eyebrow">Global support</span><h1>The queue, at a glance.</h1><p>Find the next request, make the change, leave the context.</p></div><span class="queue-live"><span class="status-dot" aria-hidden="true"></span>Live refresh</span></section>
+
+<div class="queue-toolbar">
+    <label class="search-field" for="request-search"><span aria-hidden="true">/</span><input id="request-search" @bind="search" @bind:event="oninput" placeholder="Search reference or subject" /></label>
+    <label class="filter-field" for="status-filter"><span class="sr-only">Status</span><select id="status-filter" @bind="status"><option value="">All statuses</option><option>New</option><option>InProgress</option><option>WaitingOnTeam</option><option>Resolved</option><option>Closed</option></select></label>
+    <label class="filter-field" for="priority-filter"><span class="sr-only">Priority</span><select id="priority-filter" @bind="priority"><option value="">All priorities</option><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></label>
+    <label class="filter-field" for="team-filter"><span class="sr-only">Team</span><select id="team-filter" @bind="teamId"><option value="">All teams</option>@foreach (var team in teams) { <option value="@team.TeamId">@team.Name</option> }</select></label>
+    <label class="filter-field" for="assignee-filter"><span class="sr-only">Assignee</span><select id="assignee-filter" @bind="assigneeId"><option value="">All assignees</option>@foreach (var member in globalAssignees) { <option value="@member.UserId">@member.DisplayName</option> }</select></label>
+    <button class="button button-quiet" @onclick="Load">Refresh</button>
+</div>
+
+@if (loading)
+{
+    <div class="loading-panel" role="status">Loading the global queue...</div>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-error" role="alert">@error</div>
+}
+else if (page?.Items.Count is 0 or null)
+{
+    <div class="empty-state"><strong>Nothing matches those filters.</strong><span>Try a broader search or another status.</span></div>
+}
+else
+{
+    <div class="request-table" role="table" aria-label="Global support queue"><div class="request-table-header" role="row"><span>Request</span><span>Status</span><span>Priority</span><span>Updated</span></div>
+        @foreach (var request in page!.Items)
+        {
+            <a class="request-row" role="row" href="/requests/@request.RequestId"><span class="request-main"><span class="request-reference">@request.Reference</span><strong>@request.Subject</strong></span><span><span class="status-pill status-@request.Status.ToLowerInvariant()">@request.Status</span></span><span class="priority-@request.Priority.ToLowerInvariant()">@request.Priority</span><span class="request-time">@request.UpdatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</span></a>
+        }
+    </div>
+}
+
+@code {
+    private SupportRequestPageResponse? page;
+    private string search = string.Empty;
+    private string status = string.Empty;
+    private string priority = string.Empty;
+    private string teamId = string.Empty;
+    private string assigneeId = string.Empty;
+    private CurrentUserResponse? currentUser;
+    private IReadOnlyList<TeamResponse> teams = [];
+    private IReadOnlyList<MembershipResponse> globalAssignees = [];
+    private bool loading = true;
+    private string? error;
+
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            currentUser = await Api.GetCurrentUserAsync();
+            if (currentUser is null || currentUser.Role is not ("GlobalSupportUser" or "GlobalAdministrator"))
+            {
+                error = "Your current role does not include global queue access.";
+                loading = false;
+                return;
+            }
+
+            teams = (await Api.GetTeamsAsync()).Items;
+            globalAssignees = (await Api.GetMembershipsAsync()).Items
+                .Where(member => member.Active && (member.Role is "GlobalSupportUser" or "GlobalAdministrator"))
+                .OrderBy(member => member.DisplayName)
+                .ToArray();
+            await Load();
+            _ = RefreshLoop();
+        }
+        catch
+        {
+            error = "The global queue is unavailable. Try again in a moment.";
+            loading = false;
+        }
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            page = await Api.ListRequestsAsync(search, status, priority, ParseGuid(teamId), ParseGuid(assigneeId), null);
+        }
+        catch
+        {
+            error = "The global queue is unavailable. Try again in a moment.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task RefreshLoop()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(refreshCancellation.Token))
+            {
+                var refreshed = await Api.ListRequestsAsync(search, status, priority, ParseGuid(teamId), ParseGuid(assigneeId), page?.RowVersion, refreshCancellation.Token);
+                if (refreshed is not null)
+                {
+                    page = refreshed;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (refreshCancellation.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        refreshCancellation.Cancel();
+        refreshCancellation.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    private static Guid? ParseGuid(string value) => Guid.TryParse(value, out var result) ? result : null;
+
+    private readonly CancellationTokenSource refreshCancellation = new();
+}

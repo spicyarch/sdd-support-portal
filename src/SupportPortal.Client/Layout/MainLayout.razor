@@ -1,0 +1,35 @@
+﻿@inherits LayoutComponentBase
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <div class="brand-lockup">
+            <span class="brand-mark" aria-hidden="true">S</span>
+            <div>
+                <span class="brand-kicker">Global support</span>
+                <strong>Support Portal</strong>
+            </div>
+        </div>
+        <NavMenu />
+        <div class="sidebar-footer">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>Dev workspace</span>
+        </div>
+    </aside>
+
+    <main class="app-main">
+        <header class="app-header">
+            <div class="mobile-brand">
+                <span class="brand-mark" aria-hidden="true">S</span>
+                <strong>Support Portal</strong>
+            </div>
+            <div class="header-context">
+                <span class="eyebrow">Workspace</span>
+                <span>Team support desk</span>
+            </div>
+            <a class="header-link" href="/login">Switch identity</a>
+        </header>
+
+        <article class="content-frame">
+            @Body
+        </article>
+    </main>
+</div>

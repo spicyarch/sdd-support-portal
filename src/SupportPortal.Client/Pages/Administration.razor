@@ -1,0 +1,357 @@
+@page "/admin"
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>Administration | Support Portal</PageTitle>
+
+<section class="page-intro compact-intro"><div><span class="eyebrow">Administration</span><h1>Keep access intentional.</h1><p>Teams, roles, and membership changes stay visible to the people responsible for them.</p></div></section>
+
+@if (loading)
+{
+    <div class="loading-panel" role="status">Loading administration...</div>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-error" role="alert">@error</div>
+}
+else
+{
+    <div class="admin-grid">
+        @if (isGlobalAdministrator || isTeamAdministrator)
+        {
+            <section class="admin-panel invitation-panel">
+                <div class="section-heading"><div><span class="eyebrow">Invitation</span><h2>Bring in a teammate</h2></div></div>
+                <EditForm Model="invitationForm" OnValidSubmit="CreateInvitation" class="inline-form">
+                    <label for="invitation-email">Send a role invitation</label>
+                    <div class="admin-form-grid">
+                        <InputText id="invitation-email" @bind-Value="invitationForm.Email" placeholder="Email address" />
+                        <InputSelect id="invitation-role" @bind-Value="invitationForm.Role"><option value="TeamUser">Team User</option>@if (isGlobalAdministrator) { <option value="TeamAdministrator">Team Administrator</option><option value="GlobalSupportUser">Global Support User</option><option value="GlobalAdministrator">Global Administrator</option> }</InputSelect>
+                        @if (isGlobalAdministrator && (invitationForm.Role is "TeamUser" or "TeamAdministrator"))
+                        {
+                            <InputSelect id="invitation-team" @bind-Value="invitationForm.TeamId"><option value="">Choose a team</option>@foreach (var team in ActiveTeams) { <option value="@team.TeamId">@team.Name</option> }</InputSelect>
+                        }
+                    </div>
+                    <button class="button button-primary" type="submit" disabled="@submitting">Create invitation <span aria-hidden="true">→</span></button>
+                </EditForm>
+                @if (!string.IsNullOrWhiteSpace(invitationError)) { <div class="alert alert-error" role="alert">@invitationError</div> }
+                @if (!string.IsNullOrWhiteSpace(invitationLink))
+                {
+                    <div class="invitation-result" role="status"><strong>Invitation ready</strong><input aria-label="Invitation acceptance link" readonly value="@invitationLink" /></div>
+                }
+            </section>
+        }
+
+        @if (isGlobalAdministrator)
+        {
+            <section class="admin-panel"><div class="section-heading"><div><span class="eyebrow">Teams</span><h2>Organization groups</h2></div></div><EditForm Model="teamForm" OnValidSubmit="CreateTeam" class="inline-form"><label for="team-name">New team name</label><div class="inline-form-row"><InputText id="team-name" @bind-Value="teamForm.Name" placeholder="e.g. Customer Operations" /><button class="button button-primary" type="submit" disabled="@submitting">Add team <span aria-hidden="true">+</span></button></div></EditForm><EditForm Model="teamEditForm" OnValidSubmit="UpdateTeam" class="inline-form team-edit-form"><label for="team-edit-team">Update a team</label><div class="admin-form-grid"><InputSelect id="team-edit-team" @bind-Value="teamEditForm.TeamId"><option value="">Choose a team</option>@foreach (var team in teams) { <option value="@team.TeamId">@team.Name</option> }</InputSelect><InputText id="team-edit-name" @bind-Value="teamEditForm.Name" placeholder="Team name" /><InputSelect id="team-edit-status" @bind-Value="teamEditForm.Status"><option>Active</option><option>Deactivated</option></InputSelect></div><button class="button button-quiet" type="submit" disabled="@submitting">Save team changes</button></EditForm>@if (!string.IsNullOrWhiteSpace(teamError)) { <div class="alert alert-error" role="alert">@teamError</div> }<div class="admin-list">@foreach (var team in teams) { <div class="admin-list-row"><div><strong>@team.Name</strong><small>@team.Status · @team.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</small></div><span class="status-pill status-@(team.Status.ToLowerInvariant())">@team.Status</span></div> }</div></section>
+        }
+
+        @if (isGlobalAdministrator || isTeamAdministrator)
+        {
+            <section class="admin-panel"><div class="section-heading"><div><span class="eyebrow">Membership</span><h2>People with access</h2></div></div><EditForm Model="memberForm" OnValidSubmit="CreateMembership" class="inline-form"><label for="member-name">Provision a person</label><div class="admin-form-grid"><InputText id="member-name" @bind-Value="memberForm.DisplayName" placeholder="Display name" /><InputText @bind-Value="memberForm.Email" placeholder="Email address" /><InputText @bind-Value="memberForm.ObjectId" placeholder="Entra object ID" /><InputSelect @bind-Value="memberForm.Role"><option value="TeamUser">Team User</option>@if (isGlobalAdministrator) { <option value="TeamAdministrator">Team Administrator</option><option value="GlobalSupportUser">Global Support User</option><option value="GlobalAdministrator">Global Administrator</option> }</InputSelect>@if (isGlobalAdministrator) { <InputSelect @bind-Value="memberForm.TeamId"><option value="">Global scope</option>@foreach (var team in teams) { <option value="@team.TeamId">@team.Name</option> }</InputSelect> }</div><button class="button button-primary" type="submit" disabled="@submitting">Provision access <span aria-hidden="true">→</span></button></EditForm>@if (!string.IsNullOrWhiteSpace(memberError)) { <div class="alert alert-error" role="alert">@memberError</div> }<div class="admin-list">@foreach (var member in memberships) { <div class="admin-list-row"><div><strong>@member.DisplayName</strong><small>@RoleDisplay.Format(member.Role) · @(member.TeamId is null ? "Global scope" : teams.FirstOrDefault(team => team.TeamId == member.TeamId)?.Name ?? "Assigned team")</small></div><div class="admin-row-actions"><span class="status-pill status-@(member.Active ? "active" : "closed")">@(member.Active ? "Active" : "Inactive")</span>@if (isGlobalAdministrator && member.Active) { <div class="membership-editor"><select aria-label="Role for @member.DisplayName" value="@GetMembershipRole(member)" @onchange="eventArgs => SetMembershipRole(member.RoleAssignmentId, eventArgs.Value?.ToString())"><option value="TeamUser">Team User</option><option value="TeamAdministrator">Team Administrator</option><option value="GlobalSupportUser">Global Support User</option><option value="GlobalAdministrator">Global Administrator</option></select><select aria-label="Team for @member.DisplayName" value="@GetMembershipTeam(member)" @onchange="eventArgs => SetMembershipTeam(member.RoleAssignmentId, eventArgs.Value?.ToString())"><option value="">Global scope</option>@foreach (var team in teams) { <option value="@team.TeamId">@team.Name</option> }</select><button class="icon-action" title="Replace membership" @onclick="() => Replace(member)">↻</button><button class="icon-action" title="Revoke membership" @onclick="() => Revoke(member)">×</button></div> } else if (member.Active && isTeamAdministrator && member.Role == "TeamUser") { <button class="icon-action" title="Deactivate membership" @onclick="() => Deactivate(member)">×</button> }</div></div> }</div></section>
+        }
+
+        @if (isGlobalAdministrator)
+        {
+            <section class="admin-panel audit-panel"><div class="section-heading"><div><span class="eyebrow">Audit trail</span><h2>Recent access events</h2></div></div><div class="audit-list">@foreach (var audit in audits.Take(12)) { <div class="audit-row"><span class="audit-type">@audit.EventType</span><span>@audit.Outcome</span><time>@audit.OccurredAt.ToLocalTime().ToString("MMM d, h:mm tt")</time></div> }</div></section>
+        }
+    </div>
+}
+
+@code {
+    private CurrentUserResponse? currentUser;
+    private IReadOnlyList<TeamResponse> teams = [];
+    private IReadOnlyList<MembershipResponse> memberships = [];
+    private IReadOnlyList<AuditEventResponse> audits = [];
+    private readonly TeamForm teamForm = new();
+    private readonly MemberForm memberForm = new();
+    private bool loading = true;
+    private bool submitting;
+    private string? error;
+    private string? memberError;
+    private string? teamError;
+    private string? invitationError;
+    private string? invitationLink;
+    private readonly InvitationForm invitationForm = new();
+    private readonly TeamEditForm teamEditForm = new();
+    private readonly Dictionary<Guid, string> membershipRoles = [];
+    private readonly Dictionary<Guid, string> membershipTeams = [];
+
+    private bool isGlobalAdministrator => currentUser?.Role == "GlobalAdministrator";
+    private bool isTeamAdministrator => currentUser?.Role == "TeamAdministrator";
+
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
+    private IEnumerable<TeamResponse> ActiveTeams => teams.Where(team => team.Status == "Active");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            currentUser = await Api.GetCurrentUserAsync();
+            if (currentUser is null || (!isGlobalAdministrator && !isTeamAdministrator))
+            {
+                error = "Your current role does not include administration access.";
+                return;
+            }
+
+            teams = (await Api.GetTeamsAsync()).Items;
+            memberships = (await Api.GetMembershipsAsync()).Items;
+            InitializeMembershipEditors();
+            if (isGlobalAdministrator)
+            {
+                audits = (await Api.GetAuditEventsAsync()).Items;
+            }
+        }
+        catch
+        {
+            error = "Administration is unavailable. Try again in a moment.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task CreateTeam()
+    {
+        submitting = true;
+        try
+        {
+            await Api.CreateTeamAsync(new CreateTeamRequest(teamForm.Name.Trim()));
+            teamForm.Name = string.Empty;
+            teams = (await Api.GetTeamsAsync()).Items;
+        }
+        catch
+        {
+            error = "The team could not be created.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task CreateMembership()
+    {
+        submitting = true;
+        memberError = null;
+        try
+        {
+            if (!Guid.TryParse(memberForm.ObjectId, out var objectId))
+            {
+                throw new InvalidOperationException("Enter a valid Entra object ID.");
+            }
+
+            var teamId = isTeamAdministrator
+                ? currentUser?.TeamId
+                : Guid.TryParse(memberForm.TeamId, out var parsedTeamId) ? parsedTeamId : (Guid?)null;
+            await Api.CreateMembershipAsync(new CreateMembershipRequest(objectId, memberForm.DisplayName.Trim(), memberForm.Email.Trim(), memberForm.Role, teamId));
+            memberships = (await Api.GetMembershipsAsync()).Items;
+            InitializeMembershipEditors();
+            memberForm.Clear();
+        }
+        catch (Exception exception)
+        {
+            memberError = exception.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task CreateInvitation()
+    {
+        submitting = true;
+        invitationError = null;
+        invitationLink = null;
+        try
+        {
+            var teamId = invitationForm.Role is "GlobalSupportUser" or "GlobalAdministrator"
+                ? (Guid?)null
+                : isTeamAdministrator
+                    ? currentUser?.TeamId
+                    : Guid.TryParse(invitationForm.TeamId, out var parsedTeamId) ? parsedTeamId : (Guid?)null;
+            var response = await Api.CreateInvitationAsync(new CreateInvitationRequest(invitationForm.Email.Trim(), invitationForm.Role, teamId));
+            invitationLink = response.AcceptanceLink;
+            invitationForm.Email = string.Empty;
+        }
+        catch (Exception exception)
+        {
+            invitationError = exception.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task Deactivate(MembershipResponse member)
+    {
+        submitting = true;
+        try
+        {
+            await Api.ChangeUserStatusAsync(member.UserId, member.UserRowVersion, new ChangeUserStatusRequest("Deactivated", "Deactivated from administration."));
+            memberships = (await Api.GetMembershipsAsync()).Items;
+            InitializeMembershipEditors();
+        }
+        catch
+        {
+            memberError = "The membership could not be deactivated.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task UpdateTeam()
+    {
+        teamError = null;
+        if (!Guid.TryParse(teamEditForm.TeamId, out var teamId))
+        {
+            teamError = "Choose a team to update.";
+            return;
+        }
+
+        var team = teams.FirstOrDefault(item => item.TeamId == teamId);
+        if (team is null)
+        {
+            teamError = "The selected team is no longer available.";
+            return;
+        }
+
+        submitting = true;
+        try
+        {
+            await Api.UpdateTeamAsync(team.TeamId, team.RowVersion, new UpdateTeamRequest(teamEditForm.Name.Trim(), teamEditForm.Status));
+            teams = (await Api.GetTeamsAsync()).Items;
+            teamEditForm.Clear();
+        }
+        catch (Exception exception)
+        {
+            teamError = exception.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task Replace(MembershipResponse member)
+    {
+        if (!Guid.TryParse(GetMembershipTeam(member), out var teamId) && GetMembershipRole(member) is "TeamUser" or "TeamAdministrator")
+        {
+            memberError = "Choose an active team for a team role.";
+            return;
+        }
+
+        submitting = true;
+        memberError = null;
+        try
+        {
+            var scope = GetMembershipRole(member) is "GlobalSupportUser" or "GlobalAdministrator" ? (Guid?)null : teamId;
+            await Api.ChangeMembershipAsync(member.RoleAssignmentId, member.RowVersion, new ChangeMembershipRequest("Replace", GetMembershipRole(member), scope, null));
+            memberships = (await Api.GetMembershipsAsync()).Items;
+            InitializeMembershipEditors();
+        }
+        catch (Exception exception)
+        {
+            memberError = exception.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task Revoke(MembershipResponse member)
+    {
+        submitting = true;
+        memberError = null;
+        try
+        {
+            await Api.ChangeMembershipAsync(member.RoleAssignmentId, member.RowVersion, new ChangeMembershipRequest("Revoke", null, null, "Revoked from administration."));
+            memberships = (await Api.GetMembershipsAsync()).Items;
+            InitializeMembershipEditors();
+        }
+        catch (Exception exception)
+        {
+            memberError = exception.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private void InitializeMembershipEditors()
+    {
+        foreach (var member in memberships)
+        {
+            membershipRoles[member.RoleAssignmentId] = member.Role;
+            membershipTeams[member.RoleAssignmentId] = member.TeamId?.ToString() ?? string.Empty;
+        }
+    }
+
+    private string GetMembershipRole(MembershipResponse member) => membershipRoles.GetValueOrDefault(member.RoleAssignmentId, member.Role);
+
+    private string GetMembershipTeam(MembershipResponse member) => membershipTeams.GetValueOrDefault(member.RoleAssignmentId, member.TeamId?.ToString() ?? string.Empty);
+
+    private void SetMembershipRole(Guid roleAssignmentId, string? role) => membershipRoles[roleAssignmentId] = role ?? "TeamUser";
+
+    private void SetMembershipTeam(Guid roleAssignmentId, string? teamId) => membershipTeams[roleAssignmentId] = teamId ?? string.Empty;
+
+    private sealed class TeamForm
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class MemberForm
+    {
+        public string DisplayName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string ObjectId { get; set; } = string.Empty;
+        public string Role { get; set; } = "TeamUser";
+        public string TeamId { get; set; } = string.Empty;
+
+        public void Clear()
+        {
+            DisplayName = string.Empty;
+            Email = string.Empty;
+            ObjectId = string.Empty;
+            TeamId = string.Empty;
+        }
+    }
+
+    private sealed class TeamEditForm
+    {
+        public string TeamId { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Status { get; set; } = "Active";
+
+        public void Clear()
+        {
+            TeamId = string.Empty;
+            Name = string.Empty;
+            Status = "Active";
+        }
+    }
+
+    private sealed class InvitationForm
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = "TeamUser";
+        public string TeamId { get; set; } = string.Empty;
+    }
+}

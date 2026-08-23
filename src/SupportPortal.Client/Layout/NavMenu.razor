@@ -1,0 +1,78 @@
+﻿@implements IDisposable
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+
+<div class="nav-toggle-row">
+    <span class="nav-label">Navigate</span>
+    <button title="Open navigation menu" class="nav-toggle" @onclick="ToggleNavMenu" aria-expanded="@(!collapseNavMenu)">
+        <span aria-hidden="true">&#9776;</span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable">
+    <nav class="nav-list" aria-label="Primary navigation">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All"><span class="nav-icon" aria-hidden="true">01</span><span>Overview</span></NavLink>
+        <NavLink class="nav-link" href="requests"><span class="nav-icon" aria-hidden="true">02</span><span>My requests</span></NavLink>
+        @if (CanCreateRequests)
+        {
+            <NavLink class="nav-link nav-link-accent" href="new-request"><span class="nav-icon" aria-hidden="true">+</span><span>New request</span></NavLink>
+        }
+        @if (CanUseGlobalQueue)
+        {
+            <NavLink class="nav-link" href="queue"><span class="nav-icon" aria-hidden="true">03</span><span>Support queue</span></NavLink>
+        }
+        @if (CanAdministrate)
+        {
+            <NavLink class="nav-link" href="admin"><span class="nav-icon" aria-hidden="true">04</span><span>Administration</span></NavLink>
+        }
+        <NavLink class="nav-link" href="login"><span class="nav-icon" aria-hidden="true">ID</span><span>Sign in</span></NavLink>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private CurrentUserResponse? currentUser;
+
+    private bool CanCreateRequests => currentUser?.Role is "TeamUser" or "TeamAdministrator";
+
+    private bool CanUseGlobalQueue => currentUser?.Role is "GlobalSupportUser" or "GlobalAdministrator";
+
+    private bool CanAdministrate => currentUser?.Role is "GlobalAdministrator" or "TeamAdministrator";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Identity.Changed += OnIdentityChanged;
+        await LoadCurrentUser();
+    }
+
+    private async void OnIdentityChanged()
+    {
+        await InvokeAsync(LoadCurrentUser);
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        try
+        {
+            currentUser = await Api.GetCurrentUserAsync();
+        }
+        catch
+        {
+            currentUser = null;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    public void Dispose()
+    {
+        Identity.Changed -= OnIdentityChanged;
+    }
+}

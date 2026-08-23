@@ -1,0 +1,59 @@
+@page "/new-request"
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>New request | Support Portal</PageTitle>
+
+<section class="page-intro compact-intro"><div><span class="eyebrow">New support request</span><h1>Tell support what is happening.</h1><p>Give the global support team enough context to get moving quickly.</p></div></section>
+
+<EditForm Model="form" OnValidSubmit="Submit" class="form-panel"><DataAnnotationsValidator /><ValidationSummary class="validation-summary" /><div class="form-grid"><div class="field field-wide"><label for="subject">Subject</label><InputText id="subject" @bind-Value="form.Subject" placeholder="A short description of the issue" /><ValidationMessage For="@(() => form.Subject)" /></div><div class="field"><label for="priority">Priority</label><InputSelect id="priority" @bind-Value="form.Priority"><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></InputSelect></div><div class="field field-wide"><label for="description">Description</label><InputTextArea id="description" @bind-Value="form.Description" rows="8" placeholder="Include what you expected, what happened, and what you have already tried." /><ValidationMessage For="@(() => form.Description)" /></div></div>@if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-error" role="alert">@error</div> }<div class="form-actions"><a class="button button-quiet" href="/requests">Cancel</a><button class="button button-primary" type="submit" disabled="@submitting">@(submitting ? "Sending..." : "Send request") <span aria-hidden="true">→</span></button></div></EditForm>
+
+@code {
+    private readonly RequestFormModel form = new();
+    private bool submitting;
+    private string? error;
+
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task Submit()
+    {
+        submitting = true;
+        error = null;
+        try
+        {
+            var response = await Api.CreateRequestAsync(new CreateSupportRequestRequest(form.Subject.Trim(), form.Priority, form.Description.Trim()));
+            Navigation.NavigateTo($"/requests/{response.RequestId}");
+        }
+        catch
+        {
+            error = "Your request was not sent. Check your connection and try again.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private sealed class RequestFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 3)]
+        public string Subject { get; set; } = string.Empty;
+
+        public string Priority { get; set; } = "Normal";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(10000, MinimumLength = 1)]
+        public string Description { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,86 @@
+﻿@page "/"
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject IConfiguration Configuration
+
+<PageTitle>Overview | Support Portal</PageTitle>
+
+@if (loading)
+{
+	<div class="loading-panel" role="status">Loading your workspace...</div>
+}
+else if (currentUser is null)
+{
+	<section class="empty-state page-intro">
+		<span class="eyebrow">Support desk</span>
+		<h1>Bring your team into the conversation.</h1>
+		<p>Sign in to create requests, follow progress, and keep support context in one place.</p>
+		<a class="button button-primary" href="/login">Choose an identity <span aria-hidden="true">→</span></a>
+	</section>
+}
+else
+{
+	<section class="page-intro">
+		<div><span class="eyebrow">Good morning, @currentUser.DisplayName</span><h1>Your support workspace.</h1><p>Keep requests moving with a clear view of what needs attention.</p></div>
+		@if (currentUser.Role is "TeamUser" or "TeamAdministrator")
+		{
+			<a class="button button-primary" href="/new-request">Create request <span aria-hidden="true">+</span></a>
+		}
+	</section>
+
+	<section class="overview-grid" aria-label="Workspace summary">
+		<div class="summary-panel summary-panel-dark"><span class="eyebrow">Current access</span><strong class="summary-value">@RoleDisplay.Format(currentUser.Role)</strong><span class="summary-meta">@(currentUser.TeamName ?? "All teams")</span></div>
+		<div class="summary-panel"><span class="eyebrow">Open requests</span><strong class="summary-value">@openCount</strong><span class="summary-meta">Visible to your role</span></div>
+		<div class="summary-panel summary-panel-warm"><span class="eyebrow">Workspace status</span><strong class="summary-value">Ready</strong><span class="summary-meta">Updates refresh automatically</span></div>
+	</section>
+
+	<section class="section-heading"><div><span class="eyebrow">Latest activity</span><h2>Requests that need a look</h2></div><a class="text-link" href="/requests">View all <span aria-hidden="true">→</span></a></section>
+
+	@if (requests.Count == 0)
+	{
+		<div class="empty-state compact"><strong>No requests yet.</strong><span>Create one when your team needs a hand.</span></div>
+	}
+	else
+	{
+		<div class="request-preview-list">
+			@foreach (var request in requests.Take(3))
+			{
+				<a class="request-preview" href="/requests/@request.RequestId"><div><span class="request-reference">@request.Reference</span><strong>@request.Subject</strong></div><div class="request-preview-meta"><span class="status-pill status-@request.Status.ToLowerInvariant()">@request.Status</span><span>@request.UpdatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</span></div></a>
+			}
+		</div>
+	}
+}
+
+@code {
+	private CurrentUserResponse? currentUser;
+	private IReadOnlyList<SupportRequestSummaryResponse> requests = [];
+	private bool loading = true;
+
+	private int openCount => requests.Count(item => item.Status is not "Closed" and not "Resolved");
+
+	private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+		{
+			loading = false;
+			return;
+		}
+
+		try
+		{
+			currentUser = await Api.GetCurrentUserAsync();
+			var page = await Api.ListRequestsAsync();
+			requests = page?.Items ?? [];
+		}
+		catch
+		{
+			currentUser = null;
+		}
+		finally
+		{
+			loading = false;
+		}
+	}
+}

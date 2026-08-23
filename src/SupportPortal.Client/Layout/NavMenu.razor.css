@@ -1,0 +1,111 @@
+.nav-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 3rem 0 0.8rem;
+    color: #91aba6;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.nav-toggle {
+    display: none;
+    border: 0;
+    color: #eef4ef;
+    background: transparent;
+    font-size: 1.2rem;
+}
+
+.nav-list {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-height: 2.8rem;
+    padding: 0.55rem 0.7rem;
+    color: #b8cac5;
+    border-radius: 0.65rem;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link:hover {
+    transform: translateX(0.15rem);
+}
+
+.nav-link-accent {
+    color: #172529;
+    background: #f1c982;
+}
+
+.nav-link-accent:hover,
+.nav-link-accent.active {
+    color: #172529;
+    background: #f6d99c;
+}
+
+.nav-icon {
+    width: 1.4rem;
+    color: #70918b;
+    font-family: "Aptos Mono", Consolas, monospace;
+    font-size: 0.64rem;
+    font-weight: 700;
+}
+
+.nav-link-accent .nav-icon {
+    color: #172529;
+    font-size: 1.1rem;
+}
+
+.nav-scrollable {
+    overflow-y: auto;
+}
+
+.collapse {
+    display: block;
+}
+
+@media (max-width: 800px) {
+    .nav-toggle-row {
+        margin: 0.8rem 0 0.65rem;
+    }
+
+    .nav-toggle {
+        display: block;
+    }
+
+    .collapse {
+        display: none;
+    }
+
+    .nav-list {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding-bottom: 0.2rem;
+    }
+
+    .nav-link {
+        justify-content: center;
+        gap: 0.3rem;
+        min-height: 2.45rem;
+        padding: 0.35rem;
+        font-size: 0.72rem;
+    }
+
+    .nav-icon {
+        display: none;
+    }
+}

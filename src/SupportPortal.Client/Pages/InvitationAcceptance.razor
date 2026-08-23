@@ -1,0 +1,88 @@
+@page "/invitations/accept"
+@inject SupportPortalApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Accept invitation | Support Portal</PageTitle>
+
+<section class="form-panel invitation-acceptance">
+    <span class="eyebrow">Portal access</span>
+    <h1>Accept your invitation.</h1>
+    @if (loading)
+    {
+        <div class="loading-panel" role="status">Checking invitation...</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-error" role="alert">@error</div>
+        <a class="text-link" href="/login">Return to sign in <span aria-hidden="true">→</span></a>
+    }
+    else if (accepted is null)
+    {
+        <p>Sign in with the invited organization identity before accepting access.</p>
+        <button class="button button-primary" @onclick="Accept">Accept invitation <span aria-hidden="true">→</span></button>
+    }
+    else
+    {
+        <div class="invitation-result" role="status"><strong>Access is ready</strong><span>@accepted.Role · @(accepted.TeamName ?? "All teams")</span></div>
+        <a class="button button-primary" href="/">Open workspace <span aria-hidden="true">→</span></a>
+    }
+</section>
+
+@code {
+    private string? token;
+    private CurrentUserResponse? accepted;
+    private bool loading = true;
+    private string? error;
+
+    protected override Task OnInitializedAsync()
+    {
+        token = ReadToken(Navigation.ToAbsoluteUri(Navigation.Uri));
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            error = "This invitation link is missing its token.";
+        }
+
+        loading = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task Accept()
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            error = "This invitation link is missing its token.";
+            return;
+        }
+
+        loading = true;
+        error = null;
+        try
+        {
+            accepted = await Api.AcceptInvitationAsync(new AcceptInvitationRequest(token));
+        }
+        catch
+        {
+            error = "This invitation could not be accepted. It may be expired, already used, or assigned to another identity.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private static string? ReadToken(Uri uri)
+    {
+        foreach (var pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = pair.IndexOf('=');
+            if (separator <= 0 || !StringComparer.Ordinal.Equals(pair[..separator], "token"))
+            {
+                continue;
+            }
+
+            return Uri.UnescapeDataString(pair[(separator + 1)..].Replace('+', ' '));
+        }
+
+        return null;
+    }
+}

@@ -1,0 +1,35 @@
+@page "/login"
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>Sign in | Support Portal</PageTitle>
+
+<section class="login-layout">
+    <div class="login-copy"><span class="eyebrow">One desk. Every team.</span><h1>Support that keeps the whole organization moving.</h1><p>Choose a development identity to preview the same role boundaries enforced by the API.</p><div class="login-signal"><span class="status-dot" aria-hidden="true"></span><span>Development access is isolated to this workstation</span></div></div>
+    <div class="login-panel">
+        @if (StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra"))
+        {
+            <span class="eyebrow">Organization sign-in</span><h2>Continue with Microsoft Entra ID</h2><p>Your organization identity determines your portal access.</p><a class="button button-primary button-wide" href="/authentication/login">Sign in with Entra ID <span aria-hidden="true">→</span></a>
+        }
+        else
+        {
+            <span class="eyebrow">Development sign-in</span><h2>Choose a role to preview</h2><p>Each option uses a seeded identity and real server-side scope checks.</p>
+            <div class="identity-list">
+                <button class="identity-option" @onclick='() => Select("global-admin")'><span class="identity-badge badge-coral">GA</span><span><strong>Global Administrator</strong><small>All teams and administration</small></span><span aria-hidden="true">→</span></button>
+                <button class="identity-option" @onclick='() => Select("global-support")'><span class="identity-badge badge-teal">GS</span><span><strong>Global Support User</strong><small>All teams, no administration</small></span><span aria-hidden="true">→</span></button>
+                <button class="identity-option" @onclick='() => Select("team-admin-a")'><span class="identity-badge badge-ink">TA</span><span><strong>Team Administrator</strong><small>Team A membership management</small></span><span aria-hidden="true">→</span></button>
+                <button class="identity-option" @onclick='() => Select("team-user-a")'><span class="identity-badge badge-sand">TU</span><span><strong>Team User</strong><small>Team A support requests</small></span><span aria-hidden="true">→</span></button>
+                <button class="identity-option" @onclick='() => Select("team-user-b")'><span class="identity-badge badge-sand">TU</span><span><strong>Team B User</strong><small>Team B isolation check</small></span><span aria-hidden="true">→</span></button>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private void Select(string key)
+    {
+        Identity.SetIdentity(key);
+        Navigation.NavigateTo("/");
+    }
+}

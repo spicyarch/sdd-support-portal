@@ -1,0 +1,40 @@
+# .NET build output
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+*.nupkg
+packages/
+
+# Local configuration and credentials
+local.settings.json
+appsettings.local.json
+appsettings.Development.local.json
+.env
+.env.*
+*.pfx
+*.snk
+
+# Generated client and test output
+coverage/
+playwright-report/
+test-results/
+artifacts/
+src/SupportPortal.Client/wwwroot/_framework/
+
+# IDE and operating-system files
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Terraform state and local provider data
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl

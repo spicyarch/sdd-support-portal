@@ -1,0 +1,1106 @@
+openapi: 3.1.0
+info:
+  title: Support Portal API
+  version: 1.0.0
+  license:
+    name: Proprietary - internal use only
+    identifier: LicenseRef-Proprietary
+  description: |
+    Versioned browser-to-portal API for team-scoped support collaboration.
+    The Azure Functions host validates Microsoft Entra access tokens. The API then
+    resolves the caller's portal role and team scope server-side for every operation.
+    Requests for an unauthorized scoped resource return 404 to avoid revealing it.
+servers:
+  - url: /api/v1
+security:
+  - EntraBearer: []
+tags:
+  - name: Session
+    description: Signed-in portal-user identity and effective access.
+  - name: Teams
+    description: Global Administrator team lifecycle operations.
+  - name: Memberships
+    description: Role assignments, account lifecycle, and secure onboarding.
+  - name: Requests
+    description: Team-scoped support request collaboration and lifecycle operations.
+  - name: Audit
+    description: Authorized review of immutable, whitelisted audit history.
+paths:
+  /bootstrap:
+    post:
+      servers:
+        - url: /api
+      security:
+        - FunctionKey: []
+      tags: [Memberships]
+      operationId: bootstrapPortal
+      summary: Establish the first Global Administrator.
+      description: Restricted deployment-operator operation. It is disabled by configuration after the first successful bootstrap and never accepts a normal portal bearer token as authorization.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BootstrapPortalRequest'
+      responses:
+        '201':
+          description: First Global Administrator created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapPortalResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          description: Bootstrap configuration is unavailable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /me:
+    get:
+      tags: [Session]
+      operationId: getCurrentUser
+      summary: Get the signed-in user's effective portal access.
+      responses:
+        '200':
+          description: Current active user and role assignment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InactiveAccess'
+  /teams:
+    get:
+      tags: [Teams]
+      operationId: listTeams
+      summary: List teams visible to the caller.
+      responses:
+        '200':
+          description: Team collection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Teams]
+      operationId: createTeam
+      summary: Create a team.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeam'
+      responses:
+        '201':
+          description: Team created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /teams/{teamId}:
+    patch:
+      tags: [Teams]
+      operationId: updateTeam
+      summary: Rename, activate, or deactivate a team.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeam'
+      responses:
+        '200':
+          description: Updated team.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+  /users/{userId}/status:
+    patch:
+      tags: [Memberships]
+      operationId: changeUserStatus
+      summary: Activate or deactivate a portal user as a Global Administrator.
+      description: Deactivation blocks new sign-ins and the next protected action. The final active Global Administrator cannot be deactivated.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserStatus'
+      responses:
+        '200':
+          description: User account status changed.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStatus'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+  /memberships:
+    get:
+      tags: [Memberships]
+      operationId: listMemberships
+      summary: List role assignments within the caller's authorized scope.
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Historical and active memberships visible to the caller.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Memberships]
+      operationId: createMembership
+      summary: Provision an active portal role assignment in the caller's authorized scope.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembership'
+      responses:
+        '201':
+          description: Membership created or a matching retry replayed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /memberships/{roleAssignmentId}:
+    patch:
+      tags: [Memberships]
+      operationId: changeMembership
+      summary: Replace or revoke a role assignment in the caller's authorized scope.
+      parameters:
+        - $ref: '#/components/parameters/RoleAssignmentId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeMembership'
+      responses:
+        '200':
+          description: Membership change completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+  /invitations:
+    post:
+      tags: [Memberships]
+      operationId: createInvitation
+      summary: Create a time-limited onboarding invitation.
+      description: The one-time acceptance link is returned only to the authorized caller and must be delivered through an approved out-of-band channel.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvitation'
+      responses:
+        '201':
+          description: Invitation created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationCreated'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /invitations/accept:
+    post:
+      tags: [Memberships]
+      operationId: acceptInvitation
+      summary: Accept a non-expired invitation after Entra sign-in.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitation'
+      responses:
+        '200':
+          description: Invitation accepted and role assignment established.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /requests:
+    get:
+      tags: [Requests]
+      operationId: listSupportRequests
+      summary: List requests scoped to the caller's team or global support access.
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RequestStatus'
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RequestPriority'
+        - name: assigneeUserId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          required: false
+          description: Searches request reference and subject only in the authorized scope.
+          schema:
+            type: string
+            maxLength: 200
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Request page.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequestPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Requests]
+      operationId: createSupportRequest
+      summary: Create a support request for the caller's active team.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSupportRequest'
+      responses:
+        '201':
+          description: Request created in New status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequestDetail'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /requests/{requestId}:
+    get:
+      tags: [Requests]
+      operationId: getSupportRequest
+      summary: Get one authorized support request and its chronological messages.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Request detail.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequestDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /requests/{requestId}/state:
+    patch:
+      tags: [Requests]
+      operationId: changeSupportRequestState
+      summary: Change a request lifecycle state as an authorized global user.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRequestState'
+      responses:
+        '200':
+          description: State changed.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequestDetail'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+  /requests/{requestId}/priority:
+    patch:
+      tags: [Requests]
+      operationId: changeSupportRequestPriority
+      summary: Change a request priority as an authorized global user.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRequestPriority'
+      responses:
+        '200':
+          description: Priority changed.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequestDetail'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+  /requests/{requestId}/assignment:
+    patch:
+      tags: [Requests]
+      operationId: assignSupportRequest
+      summary: Claim or reassign a request to an active global support user.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRequest'
+      responses:
+        '200':
+          description: Assignment changed.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequestDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+  /requests/{requestId}/messages:
+    post:
+      tags: [Requests]
+      operationId: postRequestMessage
+      summary: Add an immutable message to an authorized non-closed request.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessage'
+      responses:
+        '201':
+          description: Message accepted; a reply may have changed Resolved to New.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /audit-events:
+    get:
+      tags: [Audit]
+      operationId: listAuditEvents
+      summary: List audit events within the caller's authorized review scope.
+      parameters:
+        - name: targetType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: targetId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Authorized audit events with whitelisted metadata only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventPage'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  securitySchemes:
+    EntraBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Delegated Microsoft Entra access token for this API resource.
+    FunctionKey:
+      type: apiKey
+      in: header
+      name: x-functions-key
+      description: Azure Functions host key held only by the deployment operator.
+  parameters:
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RoleAssignmentId:
+      name: roleAssignmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: A caller-generated UUID reused only when retrying the identical mutation.
+      schema:
+        type: string
+        format: uuid
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag returned by the latest representation of the resource.
+      schema:
+        type: string
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: ETag returned by an earlier read, used by active-view refresh.
+      schema:
+        type: string
+  headers:
+    ETag:
+      description: Opaque version token required by state-changing operations.
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing, expired, malformed, or wrong-audience Microsoft Entra token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    InactiveAccess:
+      description: Authenticated identity has no active portal role or belongs to a deactivated team.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Caller is authenticated but lacks permission for a non-resource-specific operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource does not exist or is outside the caller's authorized scope.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ValidationProblem:
+      description: Request data violates validation or state-transition rules.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblem'
+    Conflict:
+      description: Idempotency key conflicts with a different request or a business invariant rejects the operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionFailed:
+      description: Resource ETag is stale; reload current state before retrying.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    BootstrapPortalRequest:
+      type: object
+      required: [displayName, email]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 320
+    BootstrapPortalResponse:
+      type: object
+      required: [userId, role, bootstrapDisabled, rowVersion]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        bootstrapDisabled:
+          type: boolean
+        rowVersion:
+          type: string
+    CurrentUser:
+      type: object
+      required: [userId, displayName, role, status]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        team:
+          $ref: '#/components/schemas/Team'
+        status:
+          type: string
+          enum: [Active, Deactivated]
+    Team:
+      type: object
+      required: [teamId, name, status, rowVersion]
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 120
+        status:
+          type: string
+          enum: [Active, Deactivated]
+        rowVersion:
+          type: string
+    TeamCollection:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+    CreateTeam:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+    UpdateTeam:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        status:
+          type: string
+          enum: [Active, Deactivated]
+    PortalRole:
+      type: string
+      enum: [GlobalAdministrator, GlobalSupportUser, TeamAdministrator, TeamUser]
+    Membership:
+      type: object
+      required: [roleAssignmentId, userId, role, assignedAt, active, rowVersion, userRowVersion]
+      properties:
+        roleAssignmentId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        teamId:
+          type: string
+          format: uuid
+        active:
+          type: boolean
+        assignedAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: string
+        userRowVersion:
+          type: string
+    MembershipCollection:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+    CreateMembership:
+      type: object
+      required: [entraObjectId, role]
+      properties:
+        entraObjectId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        teamId:
+          type: string
+          format: uuid
+      description: Team roles require teamId; global roles prohibit it. Team administrators may create TeamUser only for their own team.
+    ChangeUserStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [Active, Deactivated]
+        reason:
+          type: string
+          maxLength: 500
+    UserStatus:
+      type: object
+      required: [userId, status, rowVersion]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [Active, Deactivated]
+        rowVersion:
+          type: string
+    ChangeMembership:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [Revoke, Replace]
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        teamId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          maxLength: 500
+      description: Replace requires role and valid team scope. Revoke requires a nonempty reason.
+    CreateInvitation:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        teamId:
+          type: string
+          format: uuid
+      description: Team roles require teamId; global roles prohibit it. Team administrators may invite TeamUser only for their own team.
+    InvitationCreated:
+      type: object
+      required: [invitationId, role, state, expiresAt, acceptanceLink]
+      properties:
+        invitationId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/PortalRole'
+        teamId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [Pending]
+        expiresAt:
+          type: string
+          format: date-time
+        acceptanceLink:
+          type: string
+          format: uri
+          writeOnly: true
+    AcceptInvitation:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 32
+          writeOnly: true
+    RequestStatus:
+      type: string
+      enum: [New, InProgress, WaitingOnTeam, Resolved, Closed]
+    RequestPriority:
+      type: string
+      enum: [Low, Normal, High, Urgent]
+    SupportRequestSummary:
+      type: object
+      required: [requestId, reference, teamId, subject, priority, status, createdAt, updatedAt, rowVersion]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+          maxLength: 200
+        priority:
+          $ref: '#/components/schemas/RequestPriority'
+        status:
+          $ref: '#/components/schemas/RequestStatus'
+        assigneeUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: string
+    SupportRequestDetail:
+      allOf:
+        - $ref: '#/components/schemas/SupportRequestSummary'
+        - type: object
+          required: [description, createdByUserId, messages]
+          properties:
+            description:
+              type: string
+              maxLength: 10000
+            createdByUserId:
+              type: string
+              format: uuid
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+    SupportRequestPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportRequestSummary'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalCount:
+          type: integer
+          minimum: 0
+    CreateSupportRequest:
+      type: object
+      required: [subject, priority, description]
+      properties:
+        subject:
+          type: string
+          minLength: 3
+          maxLength: 200
+        priority:
+          $ref: '#/components/schemas/RequestPriority'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 10000
+    ChangeRequestState:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/RequestStatus'
+    ChangeRequestPriority:
+      type: object
+      required: [priority]
+      properties:
+        priority:
+          $ref: '#/components/schemas/RequestPriority'
+    AssignRequest:
+      type: object
+      required: [assigneeUserId]
+      properties:
+        assigneeUserId:
+          type: string
+          format: uuid
+    CreateMessage:
+      type: object
+      required: [body, clientMutationId]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        clientMutationId:
+          type: string
+          format: uuid
+    Message:
+      type: object
+      required: [messageId, authorUserId, authorRole, body, createdAt]
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        authorUserId:
+          type: string
+          format: uuid
+        authorRole:
+          $ref: '#/components/schemas/PortalRole'
+        body:
+          type: string
+          maxLength: 10000
+        createdAt:
+          type: string
+          format: date-time
+    AuditEvent:
+      type: object
+      required: [auditEventId, occurredAt, eventType, targetType, targetId, outcome]
+      properties:
+        auditEventId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        eventType:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+          format: uuid
+        outcome:
+          type: string
+          enum: [Succeeded, Denied]
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Whitelisted non-sensitive fields only.
+    AuditEventPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalCount:
+          type: integer
+          minimum: 0
+    Problem:
+      type: object
+      required: [type, title, status, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        traceId:
+          type: string
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string

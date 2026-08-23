@@ -1,0 +1,211 @@
+@page "/requests/{RequestId:guid}"
+@implements IAsyncDisposable
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<PageTitle>Request detail | Support Portal</PageTitle>
+
+@if (loading)
+{
+    <div class="loading-panel" role="status">Loading conversation...</div>
+}
+else if (request is null)
+{
+    <div class="empty-state"><strong>Request unavailable.</strong><span>It may be outside your team's access scope.</span><a class="text-link" href="/requests">Back to requests <span aria-hidden="true">→</span></a></div>
+}
+else
+{
+    <a class="back-link" href="/requests">← All requests</a><section class="detail-header"><div><span class="request-reference">@request.Reference</span><h1>@request.Subject</h1><p class="detail-meta">Opened @request.CreatedAt.ToLocalTime().ToString("MMM d, yyyy") · Team workspace</p></div><div class="detail-status"><span class="status-pill status-@request.Status.ToLowerInvariant()">@request.Status</span><span class="priority-@request.Priority.ToLowerInvariant()">@request.Priority priority</span></div></section><div class="detail-layout"><main class="conversation-panel"><div class="conversation-heading"><span class="eyebrow">Conversation</span><span>@request.Messages.Count message(s)</span></div><p class="request-description">@request.Description</p><ConversationThread Messages="request.Messages" />@if (request.Status == "Closed") { <div class="alert alert-muted">This request is closed. A global support user must reopen it before new replies can be added.</div> } else { <MessageComposer OnSubmit="PostMessage" Disabled="@submitting" Error="@messageError" /> }</main><aside class="detail-sidebar"><span class="eyebrow">Request facts</span><dl class="fact-list"><div><dt>Reference</dt><dd>@request.Reference</dd></div><div><dt>Priority</dt><dd>@request.Priority</dd></div><div><dt>Last updated</dt><dd>@request.UpdatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</dd></div></dl></aside></div>
+}
+
+@if (request is not null && currentUser?.Role is "GlobalSupportUser" or "GlobalAdministrator")
+{
+    <div class="workbench-actions" aria-label="Global support actions">
+        <label for="state-action">Status<select id="state-action" @bind="targetStatus"><option>New</option><option>InProgress</option><option>WaitingOnTeam</option><option>Resolved</option><option>Closed</option></select></label>
+        <button class="button button-primary" @onclick="ChangeStatus" disabled="@submitting">Update status</button>
+        <label for="priority-action">Priority<select id="priority-action" @bind="targetPriority"><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></label>
+        <button class="button button-quiet" @onclick="ChangePriority" disabled="@submitting">Update priority</button>
+        <label for="assignee-action">Assignee<select id="assignee-action" @bind="selectedAssignee"><option value="">Unassigned</option>@if (globalAssignees is not null) { @foreach (var member in globalAssignees) { <option value="@member.UserId">@member.DisplayName</option> } }</select></label>
+        <button class="button button-quiet" @onclick="AssignRequest" disabled="@submitting">Update assignee</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid RequestId { get; set; }
+
+    private CurrentUserResponse? currentUser;
+    private SupportRequestDetailResponse? request;
+    private bool loading = true;
+    private bool submitting;
+    private string? messageError;
+    private string targetStatus = "New";
+    private string targetPriority = "Normal";
+    private string selectedAssignee = string.Empty;
+    private IReadOnlyList<MembershipResponse>? globalAssignees;
+
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        currentUser = await Api.GetCurrentUserAsync();
+        if (currentUser?.Role is "GlobalSupportUser" or "GlobalAdministrator")
+        {
+            var memberships = await Api.GetMembershipsAsync();
+            globalAssignees = memberships.Items
+                .Where(member => member.Active && member.Role is "GlobalSupportUser" or "GlobalAdministrator")
+                .OrderBy(member => member.DisplayName)
+                .ToArray();
+        }
+
+        await Load();
+        _ = RefreshLoop();
+    }
+
+    private async Task Load()
+    {
+        try
+        {
+            var refreshed = await Api.GetRequestAsync(RequestId, request?.RowVersion, refreshCancellation.Token);
+            if (refreshed is not null)
+            {
+                request = refreshed;
+                targetStatus = request.Status;
+                targetPriority = request.Priority;
+                selectedAssignee = request.AssigneeUserId?.ToString() ?? string.Empty;
+            }
+        }
+        catch
+        {
+            request = null;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task ChangeStatus()
+    {
+        if (request is null)
+        {
+            return;
+        }
+
+        submitting = true;
+        try
+        {
+            request = await Api.ChangeStateAsync(RequestId, request.RowVersion, new ChangeRequestStateRequest(targetStatus));
+        }
+        catch
+        {
+            messageError = "The status could not be updated. Reload the request and try again.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task ChangePriority()
+    {
+        if (request is null)
+        {
+            return;
+        }
+
+        submitting = true;
+        try
+        {
+            request = await Api.ChangePriorityAsync(RequestId, request.RowVersion, new ChangeRequestPriorityRequest(targetPriority));
+        }
+        catch
+        {
+            messageError = "The priority could not be updated. Reload the request and try again.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task AssignRequest()
+    {
+        if (request is null)
+        {
+            return;
+        }
+
+        submitting = true;
+        messageError = null;
+        try
+        {
+            var assignee = Guid.TryParse(selectedAssignee, out var assigneeId) ? assigneeId : (Guid?)null;
+            request = await Api.AssignRequestAsync(RequestId, request.RowVersion, new AssignRequestRequest(assignee));
+        }
+        catch
+        {
+            messageError = "The assignee could not be updated. Reload the request and try again.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task RefreshLoop()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(refreshCancellation.Token))
+            {
+                var refreshed = await Api.GetRequestAsync(RequestId, request?.RowVersion, refreshCancellation.Token);
+                if (refreshed is not null)
+                {
+                    request = refreshed;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (refreshCancellation.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task PostMessage(string body)
+    {
+        submitting = true;
+        messageError = null;
+        try
+        {
+            await Api.PostMessageAsync(RequestId, new CreateMessageRequest(body.Trim(), Guid.NewGuid()));
+            await Load();
+        }
+        catch
+        {
+            messageError = "Your reply was not sent. Check your connection and try again.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        refreshCancellation.Cancel();
+        refreshCancellation.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    private readonly CancellationTokenSource refreshCancellation = new();
+}
