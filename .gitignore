@@ -7,6 +7,13 @@ TestResults/
 *.nupkg
 packages/
 
+# Azurite local emulator state
+__azurite_db_*.json
+__blobstorage__/
+__queuestorage__/
+__tablestorage__/
+AzuriteConfig
+
 # Local configuration and credentials
 local.settings.json
 appsettings.local.json
