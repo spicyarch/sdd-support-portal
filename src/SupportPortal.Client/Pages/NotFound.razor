@@ -1,6 +1,7 @@
 ﻿@page "/not-found"
 @layout MainLayout
+@inject BrandingState Branding
 
-<PageTitle>Not found | Support Portal</PageTitle>
+<PageTitle>Not found | @Branding.Current.ProductName</PageTitle>
 
 <div class="empty-state"><span class="eyebrow">404</span><h1>That page has moved.</h1><p>Return to your workspace to keep going.</p><a class="button button-primary" href="/">Go to overview <span aria-hidden="true">→</span></a></div>

@@ -12,6 +12,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Microsoft.Extensions.Azure" />
+    <PackageReference Include="SendGrid" />
+    <PackageReference Include="SendGrid.Extensions.DependencyInjection" />
   </ItemGroup>
 
   <ItemGroup>

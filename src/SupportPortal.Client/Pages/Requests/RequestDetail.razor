@@ -4,8 +4,9 @@
 @inject DevelopmentIdentityState Identity
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>Request detail | Support Portal</PageTitle>
+<PageTitle>Request detail | @Branding.Current.ProductName</PageTitle>
 
 @if (loading)
 {

@@ -4,8 +4,9 @@
 @inject DevelopmentIdentityState Identity
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>My requests | Support Portal</PageTitle>
+<PageTitle>My requests | @Branding.Current.ProductName</PageTitle>
 
 <section class="page-intro compact-intro"><div><span class="eyebrow">Support requests</span><h1>What your team is working through.</h1><p>Every request keeps its context, status, and conversation together.</p></div>@if (canCreateRequests) { <a class="button button-primary" href="/new-request">New request <span aria-hidden="true">+</span></a> }</section>
 

@@ -2,11 +2,12 @@
 @inject DevelopmentIdentityState Identity
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>Sign in | Support Portal</PageTitle>
+<PageTitle>Sign in | @Branding.Current.ProductName</PageTitle>
 
 <section class="login-layout">
-    <div class="login-copy"><span class="eyebrow">One desk. Every team.</span><h1>Support that keeps the whole organization moving.</h1><p>Choose a development identity to preview the same role boundaries enforced by the API.</p><div class="login-signal"><span class="status-dot" aria-hidden="true"></span><span>Development access is isolated to this workstation</span></div></div>
+    <div class="login-copy"><BrandLockup Profile="Branding.Current" /><span class="eyebrow">One desk. Every team.</span><h1>Support that keeps the whole organization moving.</h1><p>Choose a development identity to preview the same role boundaries enforced by the API.</p><div class="login-signal"><span class="status-dot" aria-hidden="true"></span><span>Development access is isolated to this workstation</span></div></div>
     <div class="login-panel">
         @if (StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra"))
         {

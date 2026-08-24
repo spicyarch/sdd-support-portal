@@ -1,0 +1,29 @@
+.brand-lockup-content {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.brand-logo,
+.brand-mark {
+    width: 2.35rem;
+    height: 2.35rem;
+    flex: 0 0 2.35rem;
+}
+
+.brand-logo {
+    display: block;
+    object-fit: contain;
+    border-radius: 0.7rem;
+}
+
+.brand-copy {
+    min-width: 0;
+}
+
+.brand-copy strong {
+    display: block;
+    max-width: 11rem;
+    overflow-wrap: anywhere;
+}

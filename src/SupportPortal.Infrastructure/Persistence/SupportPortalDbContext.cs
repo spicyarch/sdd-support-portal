@@ -4,6 +4,7 @@ using SupportPortal.Domain.Auditing;
 using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Domain.Teams;
+using SupportPortal.Domain.Notifications;
 
 namespace SupportPortal.Infrastructure.Persistence;
 
@@ -24,6 +25,12 @@ public sealed class SupportPortalDbContext(DbContextOptions<SupportPortalDbConte
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
     public DbSet<CommandReceipt> CommandReceipts => Set<CommandReceipt>();
+
+    public DbSet<Notification> Notifications => Set<Notification>();
+
+    public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+
+    public DbSet<NotificationAttempt> NotificationAttempts => Set<NotificationAttempt>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -129,6 +136,56 @@ public sealed class SupportPortalDbContext(DbContextOptions<SupportPortalDbConte
             entity.Property(item => item.RequestFingerprint).HasMaxLength(128).IsRequired();
             entity.Property(item => item.ResponseBody).IsRequired();
             entity.HasOne<User>().WithMany().HasForeignKey(item => item.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(item => item.NotificationId);
+            entity.HasIndex(item => new { item.EventType, item.SourceEntityId }).IsUnique();
+            entity.HasIndex(item => new { item.Status, item.CreatedAt });
+            entity.Property(item => item.EventType).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(item => item.Status).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+            entity.Property(item => item.RowVersion).IsConcurrencyToken().HasMaxLength(64).IsRequired();
+            entity.HasOne<User>().WithMany().HasForeignKey(item => item.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<User>().WithMany().HasForeignKey(item => item.AssigneeUserIdAtEvent).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<SupportRequest>().WithMany().HasForeignKey(item => item.SupportRequestId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Invitation>().WithMany().HasForeignKey(item => item.InvitationId).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_Notifications_SourceContext",
+                "(([EventType] = N'InvitationCreated' AND [InvitationId] IS NOT NULL AND [SupportRequestId] IS NULL) OR ([EventType] <> N'InvitationCreated' AND [InvitationId] IS NULL AND [SupportRequestId] IS NOT NULL))"));
+        });
+
+        modelBuilder.Entity<NotificationDelivery>(entity =>
+        {
+            entity.HasKey(item => item.NotificationDeliveryId);
+            entity.HasIndex(item => new { item.NotificationId, item.RecipientKey }).IsUnique();
+            entity.HasIndex(item => new { item.State, item.NextAttemptAt, item.LeaseExpiresAt });
+            entity.Property(item => item.RecipientKind).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(item => item.RecipientAddress).HasMaxLength(320);
+            entity.Property(item => item.RecipientKey).HasMaxLength(128).IsRequired();
+            entity.Property(item => item.State).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(item => item.LastFailureCategory).HasConversion<string>().HasMaxLength(64).IsRequired();
+            entity.Property(item => item.LeaseOwner).HasMaxLength(128);
+            entity.Property(item => item.ProviderMessageId).HasMaxLength(256);
+            entity.Property(item => item.RowVersion).IsConcurrencyToken().HasMaxLength(64).IsRequired();
+            entity.HasOne<Notification>().WithMany().HasForeignKey(item => item.NotificationId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<User>().WithMany().HasForeignKey(item => item.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_NotificationDeliveries_RecipientDetails",
+                "(([RecipientKind] = N'PortalUser' AND [RecipientUserId] IS NOT NULL AND [RecipientAddress] IS NULL) OR ([RecipientKind] = N'ConfiguredGlobalMailbox' AND [RecipientUserId] IS NULL AND [RecipientAddress] IS NOT NULL) OR ([RecipientKind] = N'InvitationRecipient' AND [RecipientUserId] IS NULL AND [RecipientAddress] IS NULL))"));
+        });
+
+        modelBuilder.Entity<NotificationAttempt>(entity =>
+        {
+            entity.HasKey(item => item.NotificationAttemptId);
+            entity.HasIndex(item => new { item.NotificationDeliveryId, item.AttemptNumber }).IsUnique();
+            entity.HasIndex(item => new { item.Outcome, item.CompletedAt });
+            entity.Property(item => item.Outcome).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(item => item.FailureCategory).HasConversion<string>().HasMaxLength(64).IsRequired();
+            entity.Property(item => item.ProviderMessageId).HasMaxLength(256);
+            entity.Property(item => item.CorrelationId).HasMaxLength(128).IsRequired();
+            entity.HasOne<NotificationDelivery>().WithMany().HasForeignKey(item => item.NotificationDeliveryId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

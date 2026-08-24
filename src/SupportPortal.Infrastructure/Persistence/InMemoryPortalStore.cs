@@ -4,6 +4,7 @@ using SupportPortal.Domain.Auditing;
 using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Domain.Teams;
+using SupportPortal.Domain.Notifications;
 
 namespace SupportPortal.Infrastructure.Persistence;
 
@@ -17,6 +18,9 @@ public sealed class InMemoryPortalStore : IPortalStore
     private readonly Dictionary<Guid, SupportRequest> requests = [];
     private readonly List<AuditEvent> auditEvents = [];
     private readonly Dictionary<(Guid ActorUserId, Guid IdempotencyKey), CommandReceipt> commandReceipts = [];
+    private readonly Dictionary<Guid, Notification> notifications = [];
+    private readonly Dictionary<Guid, NotificationDelivery> notificationDeliveries = [];
+    private readonly Dictionary<Guid, NotificationAttempt> notificationAttempts = [];
 
     public InMemoryPortalStore(bool seed = true)
     {
@@ -55,6 +59,53 @@ public sealed class InMemoryPortalStore : IPortalStore
     public CommandReceipt? GetCommandReceipt(Guid actorUserId, Guid idempotencyKey) => Execute(() =>
         commandReceipts.GetValueOrDefault((actorUserId, idempotencyKey)));
 
+    public IReadOnlyList<CommandReceipt> GetCommandReceipts() => Execute(() => commandReceipts.Values.ToArray());
+
+    public IReadOnlyList<Notification> GetNotifications() => Execute(() => notifications.Values.ToArray());
+
+    public Notification? GetNotification(Guid notificationId) => Execute(() => notifications.GetValueOrDefault(notificationId));
+
+    public Notification? GetNotification(NotificationEventType eventType, Guid sourceEntityId) => Execute(() =>
+        notifications.Values.SingleOrDefault(item => item.EventType == eventType && item.SourceEntityId == sourceEntityId));
+
+    public IReadOnlyList<NotificationDelivery> GetNotificationDeliveries(Guid notificationId) => Execute(() =>
+        notificationDeliveries.Values.Where(item => item.NotificationId == notificationId).ToArray());
+
+    public int GetNotificationDeliveriesByState(NotificationDeliveryState state) => Execute(() =>
+        notificationDeliveries.Values.Count(item => item.State == state));
+
+    public NotificationDelivery? GetNotificationDelivery(Guid notificationDeliveryId) => Execute(() =>
+        notificationDeliveries.GetValueOrDefault(notificationDeliveryId));
+
+    public IReadOnlyList<NotificationAttempt> GetNotificationAttempts(Guid notificationDeliveryId) => Execute(() =>
+        notificationAttempts.Values.Where(item => item.NotificationDeliveryId == notificationDeliveryId).OrderBy(item => item.AttemptNumber).ToArray());
+
+    public IReadOnlyList<NotificationDelivery> GetDueNotificationDeliveries(DateTimeOffset now, int maximumCount) => Execute(() =>
+        notificationDeliveries.Values.Where(item => item.IsDue(now)).OrderBy(item => item.NextAttemptAt).Take(maximumCount).ToArray());
+
+    public (Notification Notification, NotificationDelivery Delivery, NotificationAttempt Attempt)? TryStartNotificationAttempt(
+        Guid deliveryId,
+        string leaseOwner,
+        DateTimeOffset now,
+        TimeSpan leaseDuration) => Execute<(Notification Notification, NotificationDelivery Delivery, NotificationAttempt Attempt)?>(() =>
+    {
+        var delivery = notificationDeliveries.GetValueOrDefault(deliveryId);
+        if (delivery is null || !delivery.IsDue(now))
+        {
+            return null;
+        }
+
+        var notification = notifications.GetValueOrDefault(delivery.NotificationId);
+        if (notification is null)
+        {
+            return null;
+        }
+
+        var attempt = delivery.StartAttempt(Guid.NewGuid(), leaseOwner, notification.CorrelationId, now, leaseDuration);
+        notificationAttempts.Add(attempt.NotificationAttemptId, attempt);
+        return (notification, delivery, attempt);
+    });
+
     public void AddTeam(Team team) => Execute(() => teams.Add(team.TeamId, team));
 
     public void AddUser(User user) => Execute(() => users.Add(user.UserId, user));
@@ -68,6 +119,12 @@ public sealed class InMemoryPortalStore : IPortalStore
     public void AddAuditEvent(AuditEvent auditEvent) => Execute(() => auditEvents.Add(auditEvent));
 
     public void AddCommandReceipt(CommandReceipt receipt) => Execute(() => commandReceipts.Add((receipt.ActorUserId, receipt.IdempotencyKey), receipt));
+
+    public void AddNotification(Notification notification) => Execute(() => notifications.Add(notification.NotificationId, notification));
+
+    public void AddNotificationDelivery(NotificationDelivery delivery) => Execute(() => notificationDeliveries.Add(delivery.NotificationDeliveryId, delivery));
+
+    public void AddNotificationAttempt(NotificationAttempt attempt) => Execute(() => notificationAttempts.Add(attempt.NotificationAttemptId, attempt));
 
     public void Execute(Action action)
     {

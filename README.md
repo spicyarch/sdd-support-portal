@@ -11,6 +11,9 @@ The first feature provides:
 - Global support assignment, status, and priority updates.
 - Team and membership administration with audit visibility.
 - Invitation creation and one-time acceptance for provisioned roles.
+- Deployment-wide accessible branding with logo/favicon fallbacks and configurable support contact.
+- Optional Twilio SendGrid Web API notifications for request activity and invitations, disabled by
+	default with durable retry/recovery and Global Administrator readiness checks.
 - Microsoft Entra/MSAL configuration mode for Azure deployment.
 - Azure Functions v4 isolated API and Blazor WebAssembly client.
 
@@ -56,12 +59,15 @@ tenant/audience; development identity headers are accepted only by a Development
 
 - Tutorial: [Run and test locally on Windows](docs/tutorials/run-and-test-locally-windows.md)
 - How-to: [Set up portal roles](docs/how-to/set-up-portal-roles.md)
+- How-to: [Configure branding and SendGrid](docs/how-to/configure-branding-and-sendgrid.md)
 - How-to: [Deploy dev with VS Code](docs/how-to/deploy-dev-with-vscode.md)
 - Reference: [Role permissions](docs/reference/role-permissions.md)
 - Reference: [API](docs/reference/api.md)
+- Reference: [Branding and email settings](docs/reference/branding-and-email-settings.md)
 - Explanation: [Architecture](docs/explanation/architecture.md)
 
 ## Validation
 
-The authoritative feature specification, plan, data model, contract, quickstart, and task list are in
-[specs/001-support-portal-rbac](specs/001-support-portal-rbac/).
+The authoritative feature specifications, plans, data models, contracts, quickstarts, and task lists
+are in [specs/001-support-portal-rbac](specs/001-support-portal-rbac/) and
+[specs/002-branding-smtp-notifications](specs/002-branding-smtp-notifications/).

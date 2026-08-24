@@ -2,8 +2,9 @@
 @inject SupportPortalApiClient Api
 @inject DevelopmentIdentityState Identity
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>Overview | Support Portal</PageTitle>
+<PageTitle>Overview | @Branding.Current.ProductName</PageTitle>
 
 @if (loading)
 {

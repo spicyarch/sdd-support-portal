@@ -122,6 +122,9 @@ code {
     --teal: #3f898a;
     --warm: #f1c982;
     --line: rgba(23, 37, 41, 0.12);
+    --brand-primary: #135E96;
+    --brand-accent: #006B54;
+    --brand-focus: #006B54;
     --shadow: 0 1.2rem 3rem rgba(23, 37, 41, 0.08);
 }
 
@@ -186,8 +189,9 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 0.2rem solid var(--coral);
+    outline: 0.2rem solid #ffffff;
     outline-offset: 0.18rem;
+    box-shadow: 0 0 0 0.4rem var(--brand-focus);
 }
 
 .page-intro {
@@ -231,13 +235,13 @@ textarea:focus-visible {
 
 .button-primary {
     color: #ffffff;
-    background: var(--coral);
+    background: var(--brand-primary);
     box-shadow: 0 0.6rem 1.2rem rgba(219, 96, 79, 0.2);
 }
 
 .button-primary:hover {
     color: #ffffff;
-    background: #c84e40;
+    filter: brightness(0.9);
 }
 
 .button-quiet {
@@ -252,7 +256,7 @@ textarea:focus-visible {
 
 .text-link,
 .back-link {
-    color: var(--coral);
+    color: var(--brand-accent);
     font-size: 0.8rem;
     font-weight: 800;
     text-decoration: none;

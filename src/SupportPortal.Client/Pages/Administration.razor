@@ -3,8 +3,9 @@
 @inject DevelopmentIdentityState Identity
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>Administration | Support Portal</PageTitle>
+<PageTitle>Administration | @Branding.Current.ProductName</PageTitle>
 
 <section class="page-intro compact-intro"><div><span class="eyebrow">Administration</span><h1>Keep access intentional.</h1><p>Teams, roles, and membership changes stay visible to the people responsible for them.</p></div></section>
 

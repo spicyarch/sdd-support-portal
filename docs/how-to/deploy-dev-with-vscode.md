@@ -13,6 +13,9 @@ dev acceptance is recorded, whichever comes first. Do not use it for test, stagi
    settings.
 5. Run the local Windows build, automated tests, contract lint, and quickstart acceptance scenarios.
 6. Update `CHANGELOG.md` before deployment.
+7. Confirm SendGrid is disabled unless the dev account, verified sender, restricted `mail.send` API
+   key, secret-backed `SendGrid__ApiKey`, public portal URL, and additive notification migration are
+   ready. Never use `Upload Local Settings` for the API key.
 
 ## Function App
 
@@ -21,8 +24,9 @@ dev acceptance is recorded, whichever comes first. Do not use it for test, stagi
 3. Select the exact Function App and confirm the overwrite prompt only after checking resource group and
    app name.
 4. Save the deployment output, artifact timestamp, and migration version.
-5. Run `Azure Functions: Start Streaming Logs` and verify a health request, sign-in, and authorization
-   denial. Confirm logs contain no token, email, request body, or message body.
+5. Run `Azure Functions: Start Streaming Logs` and verify a health request, sign-in, authorization
+   denial, and disabled/invalid SendGrid readiness. Confirm logs contain no key, token, email,
+   request body, provider body, or message body.
 
 ## Static Web App
 
@@ -42,7 +46,9 @@ dev acceptance is recorded, whichever comes first. Do not use it for test, stagi
 
 Repeat the scenarios in the feature quickstart against the dev URL. Verify 401 unauthenticated API
 requests, cross-team 404 isolation, role changes within 60 seconds, idempotent retries, five-second
-active-view updates, keyboard navigation, and required viewport widths.
+active-view updates, keyboard navigation, required viewport widths, effective branding, sandbox
+readiness, controlled live readiness only with approval, SendGrid failure recovery, and safe
+disablement.
 
 Record client and API artifact IDs, migration version, trace IDs, outcomes, and approver in the
 release notes and `CHANGELOG.md`.

@@ -1,0 +1,41 @@
+<div class="brand-lockup-content" aria-label="@Profile.ProductName">
+    @if (!imageUnavailable && !string.IsNullOrWhiteSpace(Profile.LogoUrl))
+    {
+        <img class="brand-logo" src="@Profile.LogoUrl" alt="" aria-hidden="true" @onerror="HandleImageError" />
+    }
+    else
+    {
+        <span class="brand-mark" aria-hidden="true">@Profile.Initials</span>
+    }
+
+    @if (ShowProductName)
+    {
+        <div class="brand-copy">
+            @if (!string.IsNullOrWhiteSpace(Profile.OrganizationName))
+            {
+                <span class="brand-kicker">@Profile.OrganizationName</span>
+            }
+            <strong>@Profile.ProductName</strong>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public EffectiveBrandingResponse Profile { get; set; } = BrandingState.CreateDefault();
+
+    [Parameter]
+    public bool ShowProductName { get; set; } = true;
+
+    private bool imageUnavailable;
+
+    protected override void OnParametersSet()
+    {
+        imageUnavailable = false;
+    }
+
+    private void HandleImageError()
+    {
+        imageUnavailable = true;
+    }
+}

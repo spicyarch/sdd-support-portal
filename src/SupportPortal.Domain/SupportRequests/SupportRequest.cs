@@ -61,6 +61,9 @@ public sealed class SupportRequest
 
     public IReadOnlyList<Message> Messages => messages.AsReadOnly();
 
+    public bool ContainsClientMutation(Guid clientMutationId) =>
+        messages.Any(message => message.ClientMutationId == clientMutationId);
+
     public string RowVersion { get; private set; } = "1";
 
     public void AddMessage(Message message, DateTimeOffset at)

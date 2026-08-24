@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SupportPortal.Contracts\SupportPortal.Contracts.csproj" />
     <None Include="..\..\specs\001-support-portal-rbac\contracts\support-portal-api.yaml" Link="support-portal-api.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\specs\002-branding-smtp-notifications\contracts\branding-email-api.yaml" Link="branding-email-api.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -48,14 +48,14 @@
 }
 
 .nav-link-accent {
-    color: #172529;
-    background: #f1c982;
+    color: #ffffff;
+    background: var(--brand-accent, #006B54);
 }
 
 .nav-link-accent:hover,
 .nav-link-accent.active {
-    color: #172529;
-    background: #f6d99c;
+    color: #ffffff;
+    background: color-mix(in srgb, var(--brand-accent, #006B54) 88%, #000000);
 }
 
 .nav-icon {
@@ -67,7 +67,7 @@
 }
 
 .nav-link-accent .nav-icon {
-    color: #172529;
+    color: #ffffff;
     font-size: 1.1rem;
 }
 

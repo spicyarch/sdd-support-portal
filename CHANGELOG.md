@@ -16,6 +16,11 @@ All notable changes to this project are documented here.
 - Team rename/lifecycle editing, role replacement/revocation, and role-aware navigation.
 - Restricted first-administrator bootstrap and one-time invitation create/accept operations.
 - Production identity, tenant/audience, CORS, and invitation-signing configuration guards.
+- Deployment-wide accessible branding with logo/favicon fallbacks, effective titles, and configurable
+  support contact details.
+- Optional Twilio SendGrid Web API v3 request/reply/invitation notifications with atomic SQL
+  scheduling, private per-recipient delivery, bounded retry/recovery, Global Administrator readiness,
+  and secret-safe operational signals.
 - Domain policies for team scope, request lifecycle, idempotent mutations, ETags, and final-admin
   protection.
 - Azure SQL EF Core store/model/migration boundary with durable command receipts, OpenTelemetry/Azure
@@ -28,3 +33,7 @@ All notable changes to this project are documented here.
   Azure SQL selection is available when `Portal:SqlConnection` is configured, but Azure resource
   configuration, managed-identity permissions, recovery proof, and dev deployment remain release gates.
 - Terraform for upper lifecycles remains deferred until dev acceptance.
+- SendGrid delivery remains disabled by default. The provider accepts mail through HTTP 202, and the
+  absence of a SendGrid `/mail/send` idempotency key means ambiguous post-acceptance network failures
+  are bounded at-least-once for mailbox delivery; portal mutations and logical notifications remain
+  duplicate-safe.

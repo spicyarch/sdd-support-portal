@@ -48,11 +48,41 @@ dotnet test .\src\SupportPortal.sln --configuration Debug
 The current suite covers domain policies, application use cases, API contract shape, and service
 integration. Playwright viewport tests require a running client and browser installation.
 
+Feature 002 keeps SendGrid disabled by default. To test the provider locally, store the API key with
+`dotnet user-secrets` for the API project and set non-secret `SendGrid__*` values in the untracked
+local configuration. Use the sandbox readiness check before any explicitly confirmed live test. Do
+not place a key, invitation token, recipient list, or ticket content in configuration examples or
+test output.
+
 ```powershell
 $env:SUPPORT_PORTAL_CLIENT_URL = 'http://localhost:5258'
 powershell -ExecutionPolicy Bypass -File .\tests\SupportPortal.UI.Tests\bin\Debug\net10.0\playwright.ps1 install
 dotnet test .\tests\SupportPortal.UI.Tests\SupportPortal.UI.Tests.csproj --configuration Debug
 ```
+
+Observed local feature evidence on 2026-08-24:
+
+- The disabled API smoke test returned the built-in `Support Portal` profile, safe `#006B54`
+	focus color, `EmailState=Disabled`, and zero delivery counts; the fixed five-second timer indexed
+	and invoked successfully.
+- The focused application, domain, API integration, contract, and UI projects compiled and passed
+	their executable tests. The API integration run had 21 passing tests and five SQL tests skipped
+	because `SUPPORT_PORTAL_SQL_TEST_CONNECTION` was not configured. The UI project has two browser
+	journeys skipped until a running client/API pair and Playwright browser are available.
+- No live SendGrid request was made. Provider behavior used fake gateways; no API key, invitation
+	token, recipient address, ticket content, or provider body was recorded.
+
+Run the opt-in SQL tests only against an approved dedicated database:
+
+```powershell
+$env:SUPPORT_PORTAL_SQL_TEST_CONNECTION = '<dedicated-sql-connection-string>'
+dotnet test .\tests\SupportPortal.Api.IntegrationTests\SupportPortal.Api.IntegrationTests.csproj --configuration Debug
+Remove-Item Env:SUPPORT_PORTAL_SQL_TEST_CONNECTION
+```
+
+The placeholder above is an operator prompt, not a value to commit. Azure deployment, Domain
+Authentication, controlled live readiness, and clean-environment operator acceptance remain
+release-environment checks.
 
 ## Manual Acceptance
 

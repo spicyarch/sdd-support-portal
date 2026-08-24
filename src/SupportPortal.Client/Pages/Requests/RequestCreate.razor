@@ -3,8 +3,9 @@
 @inject DevelopmentIdentityState Identity
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>New request | Support Portal</PageTitle>
+<PageTitle>New request | @Branding.Current.ProductName</PageTitle>
 
 <section class="page-intro compact-intro"><div><span class="eyebrow">New support request</span><h1>Tell support what is happening.</h1><p>Give the global support team enough context to get moving quickly.</p></div></section>
 

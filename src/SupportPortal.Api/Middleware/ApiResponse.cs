@@ -27,9 +27,14 @@ public static class ApiResponse
         };
     }
 
-    public static StatusCodeResult NotModified(HttpRequest request)
+    public static StatusCodeResult NotModified(HttpRequest request, string? etag = null)
     {
         AddCorsHeaders(request);
+        if (!string.IsNullOrWhiteSpace(etag))
+        {
+            request.HttpContext.Response.Headers.ETag = $"\"{etag}\"";
+        }
+
         return new StatusCodeResult(StatusCodes.Status304NotModified);
     }
 

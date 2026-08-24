@@ -1,0 +1,376 @@
+openapi: 3.1.0
+info:
+  title: Support Portal Branding and Email Operations API
+  version: 1.1.0
+  license:
+    name: Proprietary - internal use only
+    identifier: LicenseRef-Proprietary
+  description: |
+    Additive v1 operations for the deployment-wide effective brand and authorized
+    Twilio SendGrid Web API readiness checks. The branding operation is intentionally
+    anonymous so portal-controlled sign-in can render before authentication. It returns
+    only validated public values. The readiness operation requires an active Global
+    Administrator and never returns configuration values, recipients, provider bodies,
+    credentials, ticket content, or invitation links.
+servers:
+  - url: /api/v1
+security:
+  - EntraBearer: []
+tags:
+  - name: Branding
+    description: Safe deployment-wide identity used by portal-controlled surfaces.
+  - name: Email Operations
+    description: Restricted Twilio SendGrid Web API readiness checks.
+paths:
+  /branding:
+    get:
+      tags: [Branding]
+      operationId: getEffectiveBranding
+      summary: Get the deployment's effective public brand.
+      description: |
+        Returns the validated effective brand after field-level accessible fallbacks.
+        Raw configured values and validation failures are not exposed. The endpoint
+        remains available with built-in defaults when all overrides are absent or invalid.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Effective public brand.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              description: Public profile cache policy; configuration changes may require restart.
+              schema:
+                type: string
+                example: public, max-age=300
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveBranding'
+        '304':
+          description: The supplied ETag still identifies the effective profile.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          description: The conditional request header is malformed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /operations/email/readiness:
+    post:
+      tags: [Email Operations]
+      operationId: checkEmailReadiness
+      summary: Check Twilio SendGrid Web API configuration and sender acceptance.
+      description: |
+        Active Global Administrator only. Sandbox mode validates HTTPS connectivity,
+        API-key authentication, mail.send permission, and message shape without sending
+        email. Live mode requires an explicit test recipient and confirmation and proves
+        only that SendGrid accepted the sender/message, not final mailbox delivery.
+        This operation bypasses durable notification work and cannot consume, mutate,
+        retry, or duplicate an ordinary recipient delivery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailReadinessRequest'
+      responses:
+        '200':
+          description: The requested readiness stage was accepted by SendGrid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailReadinessResult'
+        '400':
+          description: Invalid readiness mode, recipient, or live-send confirmation.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: A valid Microsoft Entra access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: The caller is not an active Global Administrator.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: |
+            Email delivery is disabled, configuration is invalid, or the provider did not
+            accept the readiness request. The response contains only a safe category and
+            setting names where applicable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailReadinessResult'
+components:
+  securitySchemes:
+    EntraBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Microsoft Entra token validated by the Functions host and portal authorization layer.
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Previously returned effective-brand ETag.
+      schema:
+        type: string
+        maxLength: 160
+  headers:
+    ETag:
+      description: Opaque version of the effective non-secret brand profile.
+      schema:
+        type: string
+        maxLength: 160
+  schemas:
+    EffectiveBranding:
+      type: object
+      additionalProperties: false
+      required:
+        - productName
+        - shortProductName
+        - initials
+        - primaryColor
+        - accentColor
+        - focusColor
+        - supportContact
+        - profileVersion
+      properties:
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Northwind Support
+        shortProductName:
+          type: string
+          minLength: 1
+          maxLength: 20
+          example: NS
+        initials:
+          type: string
+          minLength: 1
+          maxLength: 3
+          example: NS
+        logoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          maxLength: 2048
+          description: Null means the client must use product text or initials.
+        faviconUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          maxLength: 2048
+          description: Null means the client must use the built-in favicon.
+        primaryColor:
+          $ref: '#/components/schemas/OpaqueHexColor'
+        accentColor:
+          $ref: '#/components/schemas/OpaqueHexColor'
+        focusColor:
+          $ref: '#/components/schemas/OpaqueHexColor'
+        supportContact:
+          $ref: '#/components/schemas/SupportContact'
+        organizationName:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          maxLength: 200
+        profileVersion:
+          type: string
+          minLength: 64
+          maxLength: 64
+          pattern: '^[A-F0-9]{64}$'
+          description: SHA-256 version of canonical effective public fields.
+    OpaqueHexColor:
+      type: string
+      pattern: '^#[A-Fa-f0-9]{6}$'
+      example: '#135E96'
+    SupportContact:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: Support Operations
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 320
+          example: support@example.com
+    EmailReadinessRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          enum:
+            - Sandbox
+            - Live
+          description: Sandbox sends nothing; Live sends one controlled test message.
+        testRecipient:
+          type:
+            - string
+            - 'null'
+          format: email
+          minLength: 3
+          maxLength: 320
+          description: Required only for Live mode and never echoed in the response.
+        confirmLiveSend:
+          type: boolean
+          default: false
+          description: Must be true for Live mode to prevent an accidental message.
+      allOf:
+        - if:
+            properties:
+              mode:
+                const: Live
+          then:
+            required:
+              - testRecipient
+              - confirmLiveSend
+            properties:
+              testRecipient:
+                type: string
+                format: email
+                minLength: 3
+                maxLength: 320
+              confirmLiveSend:
+                const: true
+    EmailReadinessResult:
+      type: object
+      additionalProperties: false
+      required:
+        - mode
+        - outcome
+        - stage
+        - failureCategory
+        - checkedAt
+        - correlationId
+        - deliveryMeaning
+        - invalidSettingNames
+      properties:
+        mode:
+          type: string
+          enum:
+            - Sandbox
+            - Live
+        outcome:
+          type: string
+          enum:
+            - Ready
+            - Accepted
+            - Disabled
+            - InvalidConfiguration
+            - ProviderRejected
+            - ProviderUnavailable
+        stage:
+          type: string
+          enum:
+            - Configuration
+            - HttpsConnectivity
+            - AuthenticationAndScope
+            - PayloadValidation
+            - SenderAcceptance
+        providerHttpStatus:
+          type:
+            - integer
+            - 'null'
+          minimum: 100
+          maximum: 599
+          description: Safe provider status only; no response body is returned.
+        failureCategory:
+          type: string
+          enum:
+            - None
+            - Disabled
+            - InvalidConfiguration
+            - Timeout
+            - NetworkUnavailable
+            - RateLimited
+            - AuthenticationRejected
+            - PermissionOrSenderRejected
+            - RequestRejected
+            - ProviderFailure
+        checkedAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        deliveryMeaning:
+          type: string
+          enum:
+            - NoEmailSent
+            - AcceptedBySendGridMailboxDeliveryUnconfirmed
+            - NoProviderRequestMade
+        invalidSettingNames:
+          type: array
+          maxItems: 16
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+              - SendGrid:ApiKey
+              - SendGrid:SenderDisplayName
+              - SendGrid:SenderAddress
+              - SendGrid:ReplyToAddress
+              - SendGrid:GlobalSupportRecipients
+              - SendGrid:PublicPortalUrl
+              - SendGrid:HttpTimeoutSeconds
+              - SendGrid:MaximumAttempts
+              - SendGrid:MinimumBackoffSeconds
+              - SendGrid:MaximumBackoffSeconds
+              - SendGrid:DataResidency
+              - SendGrid:BatchSize
+              - SendGrid:LeaseSeconds
+          description: Setting names only; values are never included.
+    Problem:
+      type: object
+      additionalProperties: true
+      required:
+        - title
+        - status
+        - traceId
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          maxLength: 1000
+        traceId:
+          type: string
+          minLength: 1
+          maxLength: 128

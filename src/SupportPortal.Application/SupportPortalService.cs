@@ -1,9 +1,9 @@
 using System.Globalization;
-using System.Net.Mail;
 using SupportPortal.Application.Abstractions;
 using SupportPortal.Application.Authorization;
 using SupportPortal.Application.Commands;
 using SupportPortal.Application.Common;
+using SupportPortal.Application.Notifications;
 using SupportPortal.Contracts.Auditing;
 using SupportPortal.Contracts.Authorization;
 using SupportPortal.Contracts.Requests;
@@ -23,14 +23,16 @@ public sealed class SupportPortalService
     private readonly IdempotencyService idempotency;
     private readonly TimeProvider clock;
     private readonly IInvitationTokenService invitationTokens;
+    private readonly NotificationScheduler? notificationScheduler;
 
-    public SupportPortalService(IPortalStore store, TimeProvider clock, IInvitationTokenService? invitationTokens = null)
+    public SupportPortalService(IPortalStore store, TimeProvider clock, IInvitationTokenService? invitationTokens = null, NotificationScheduler? notificationScheduler = null)
     {
         this.store = store;
         this.clock = clock;
         access = new PortalAccessEvaluator();
         idempotency = new IdempotencyService(store);
         this.invitationTokens = invitationTokens ?? new EphemeralInvitationTokenService();
+        this.notificationScheduler = notificationScheduler;
     }
 
     public CurrentUserResponse GetCurrentUser(PortalPrincipal principal)
@@ -128,6 +130,7 @@ public sealed class SupportPortalService
                 now);
             store.AddRequest(request);
             store.AddAuditEvent(new AuditEvent(Guid.NewGuid(), now, "RequestCreated", principal.UserId, "SupportRequest", request.SupportRequestId, true));
+            notificationScheduler?.ScheduleRequestCreated(request, principal.UserId, now);
             var response = MapDetail(request);
             store.AddCommandReceipt(idempotency.CreateReceipt(principal.UserId, idempotencyKey, fingerprint, 201, response, now));
             return response;
@@ -158,9 +161,14 @@ public sealed class SupportPortalService
             }
 
             var now = clock.GetUtcNow();
+            var isNewMessage = !request.ContainsClientMutation(input.ClientMutationId);
             var message = new Message(Guid.NewGuid(), requestId, principal.UserId, principal.Role, input.Body, input.ClientMutationId, now);
             request.AddMessage(message, now);
             store.AddAuditEvent(new AuditEvent(Guid.NewGuid(), now, "MessagePosted", principal.UserId, "SupportRequest", requestId, true));
+            if (isNewMessage)
+            {
+                notificationScheduler?.ScheduleMessage(request, message, principal.UserId, now);
+            }
             var response = MapMessage(message);
             store.AddCommandReceipt(idempotency.CreateReceipt(principal.UserId, idempotencyKey, fingerprint, 201, response, now));
             return response;
@@ -488,6 +496,7 @@ public sealed class SupportPortalService
                 principal.UserId);
             store.AddInvitation(invitation);
             store.AddAuditEvent(new AuditEvent(Guid.NewGuid(), now, "InvitationCreated", principal.UserId, "Invitation", invitation.InvitationId, true));
+            notificationScheduler?.ScheduleInvitation(invitation, principal.UserId, now);
             var response = new InvitationCreatedResponse(
                 invitation.InvitationId,
                 invitation.Role.ToString(),
@@ -789,14 +798,12 @@ public sealed class SupportPortalService
     private static string NormalizeEmail(string? value)
     {
         ValidateLength(value, 3, 320, "Email");
-        try
+        if (Common.EmailAddressRules.TryNormalize(value, out var normalized))
         {
-            return new MailAddress(value!.Trim()).Address.ToLowerInvariant();
+            return normalized.ToLowerInvariant();
         }
-        catch (FormatException)
-        {
-            throw Validation("Email must be a valid address.");
-        }
+
+        throw Validation("Email must be a valid address.");
     }
 
     private static PortalRole ParseRole(string? value)

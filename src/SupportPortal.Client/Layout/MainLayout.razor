@@ -1,25 +1,26 @@
 ﻿@inherits LayoutComponentBase
-<div class="app-shell">
+@implements IDisposable
+@inject BrandingState Branding
+
+<HeadContent>
+    <title>@Branding.Current.ProductName</title>
+    <link rel="icon" type="image/png" href="@(faviconUnavailable ? "favicon.png" : Branding.Current.FaviconUrl ?? "favicon.png")" @onerror="HandleFaviconError" />
+</HeadContent>
+
+<div class="app-shell" style="@Branding.CssVariables">
     <aside class="app-sidebar">
-        <div class="brand-lockup">
-            <span class="brand-mark" aria-hidden="true">S</span>
-            <div>
-                <span class="brand-kicker">Global support</span>
-                <strong>Support Portal</strong>
-            </div>
-        </div>
+        <BrandLockup @key="Branding.Current.ProfileVersion" Profile="Branding.Current" />
         <NavMenu />
         <div class="sidebar-footer">
             <span class="status-dot" aria-hidden="true"></span>
-            <span>Dev workspace</span>
+            <a href="mailto:@Branding.Current.SupportContact.Email">@Branding.Current.SupportContact.Name</a>
         </div>
     </aside>
 
     <main class="app-main">
         <header class="app-header">
             <div class="mobile-brand">
-                <span class="brand-mark" aria-hidden="true">S</span>
-                <strong>Support Portal</strong>
+                <BrandLockup @key="Branding.Current.ProfileVersion" Profile="Branding.Current" ShowProductName="false" />
             </div>
             <div class="header-context">
                 <span class="eyebrow">Workspace</span>
@@ -33,3 +34,33 @@
         </article>
     </main>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Branding.Changed += OnBrandChanged;
+        await Branding.LoadAsync();
+    }
+
+    private void OnBrandChanged()
+    {
+        faviconUnavailable = false;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private bool faviconUnavailable;
+
+    private void HandleFaviconError()
+    {
+        if (!faviconUnavailable)
+        {
+            faviconUnavailable = true;
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        Branding.Changed -= OnBrandChanged;
+    }
+}

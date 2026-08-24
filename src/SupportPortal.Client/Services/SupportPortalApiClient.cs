@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using SupportPortal.Contracts.Auditing;
 using SupportPortal.Contracts.Authorization;
+using SupportPortal.Contracts.Branding;
 using SupportPortal.Contracts.Requests;
 using SupportPortal.Contracts.Teams;
 
@@ -26,6 +27,18 @@ public sealed class SupportPortalApiClient
 
         await EnsureSuccess(response);
         return await response.Content.ReadFromJsonAsync<CurrentUserResponse>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<EffectiveBrandingResponse?> GetBrandingAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.GetAsync("branding", cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotModified)
+        {
+            return null;
+        }
+
+        await EnsureSuccess(response);
+        return await response.Content.ReadFromJsonAsync<EffectiveBrandingResponse>(cancellationToken: cancellationToken);
     }
 
     public async Task<SupportRequestPageResponse?> ListRequestsAsync(string? etag = null, CancellationToken cancellationToken = default)

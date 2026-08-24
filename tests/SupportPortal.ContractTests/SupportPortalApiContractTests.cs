@@ -37,4 +37,21 @@ public sealed class SupportPortalApiContractTests
             Assert.Contains(value, contract);
         }
     }
+
+    [Fact]
+    public void BrandingAndEmailContractExposesOnlySafeOperations()
+    {
+        var contract = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "branding-email-api.yaml"));
+
+        Assert.Contains("/branding:", contract);
+        Assert.Contains("security: []", contract);
+        Assert.Contains("/operations/email/readiness:", contract);
+        Assert.Contains("Global Administrator", contract);
+        Assert.Contains("mail.send", contract);
+        Assert.Contains("NoEmailSent", contract);
+        Assert.Contains("AcceptedBySendGridMailboxDeliveryUnconfirmed", contract);
+        Assert.Contains("invalidSettingNames", contract);
+        Assert.DoesNotContain("recipientAddress", contract, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("apiKey:", contract, StringComparison.OrdinalIgnoreCase);
+    }
 }

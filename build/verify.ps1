@@ -11,4 +11,5 @@ if (-not (Get-Command $dotnet -ErrorAction SilentlyContinue)) {
 
 if (Get-Command npx -ErrorAction SilentlyContinue) {
     & npx --yes @redocly/cli@latest lint .\specs\001-support-portal-rbac\contracts\support-portal-api.yaml
+    & npx --yes @redocly/cli@latest lint .\specs\002-branding-smtp-notifications\contracts\branding-email-api.yaml
 }

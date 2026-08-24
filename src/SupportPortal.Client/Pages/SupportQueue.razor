@@ -4,8 +4,9 @@
 @inject DevelopmentIdentityState Identity
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
+@inject BrandingState Branding
 
-<PageTitle>Support queue | Support Portal</PageTitle>
+<PageTitle>Support queue | @Branding.Current.ProductName</PageTitle>
 
 <section class="page-intro compact-intro"><div><span class="eyebrow">Global support</span><h1>The queue, at a glance.</h1><p>Find the next request, make the change, leave the context.</p></div><span class="queue-live"><span class="status-dot" aria-hidden="true"></span>Live refresh</span></section>
 

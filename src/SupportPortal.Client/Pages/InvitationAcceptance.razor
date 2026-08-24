@@ -1,10 +1,12 @@
 @page "/invitations/accept"
 @inject SupportPortalApiClient Api
 @inject NavigationManager Navigation
+@inject BrandingState Branding
 
-<PageTitle>Accept invitation | Support Portal</PageTitle>
+<PageTitle>Accept invitation | @Branding.Current.ProductName</PageTitle>
 
 <section class="form-panel invitation-acceptance">
+    <BrandLockup Profile="Branding.Current" />
     <span class="eyebrow">Portal access</span>
     <h1>Accept your invitation.</h1>
     @if (loading)
