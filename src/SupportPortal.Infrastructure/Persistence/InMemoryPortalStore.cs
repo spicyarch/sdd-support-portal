@@ -5,6 +5,7 @@ using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Domain.Teams;
 using SupportPortal.Domain.Notifications;
+using SupportPortal.Domain.Settings;
 
 namespace SupportPortal.Infrastructure.Persistence;
 
@@ -21,6 +22,8 @@ public sealed class InMemoryPortalStore : IPortalStore
     private readonly Dictionary<Guid, Notification> notifications = [];
     private readonly Dictionary<Guid, NotificationDelivery> notificationDeliveries = [];
     private readonly Dictionary<Guid, NotificationAttempt> notificationAttempts = [];
+    private DeploymentSettings? deploymentSettings;
+    private readonly Dictionary<Guid, DeploymentSettingsRecipient> deploymentSettingsRecipients = [];
 
     public InMemoryPortalStore(bool seed = true)
     {
@@ -80,6 +83,14 @@ public sealed class InMemoryPortalStore : IPortalStore
     public IReadOnlyList<NotificationAttempt> GetNotificationAttempts(Guid notificationDeliveryId) => Execute(() =>
         notificationAttempts.Values.Where(item => item.NotificationDeliveryId == notificationDeliveryId).OrderBy(item => item.AttemptNumber).ToArray());
 
+    public DeploymentSettings? GetDeploymentSettings() => Execute(() => deploymentSettings);
+
+    public IReadOnlyList<DeploymentSettingsRecipient> GetDeploymentSettingsRecipients(Guid deploymentSettingsId) => Execute(() =>
+        deploymentSettingsRecipients.Values
+            .Where(item => item.DeploymentSettingsId == deploymentSettingsId)
+            .OrderBy(item => item.NormalizedAddress)
+            .ToArray());
+
     public IReadOnlyList<NotificationDelivery> GetDueNotificationDeliveries(DateTimeOffset now, int maximumCount) => Execute(() =>
         notificationDeliveries.Values.Where(item => item.IsDue(now)).OrderBy(item => item.NextAttemptAt).Take(maximumCount).ToArray());
 
@@ -125,6 +136,31 @@ public sealed class InMemoryPortalStore : IPortalStore
     public void AddNotificationDelivery(NotificationDelivery delivery) => Execute(() => notificationDeliveries.Add(delivery.NotificationDeliveryId, delivery));
 
     public void AddNotificationAttempt(NotificationAttempt attempt) => Execute(() => notificationAttempts.Add(attempt.NotificationAttemptId, attempt));
+
+    public void AddDeploymentSettings(DeploymentSettings settings) => Execute(() =>
+    {
+        if (deploymentSettings is not null)
+        {
+            throw new InvalidOperationException("Deployment settings already exist.");
+        }
+
+        deploymentSettings = settings;
+    });
+
+    public void AddDeploymentSettingsRecipient(DeploymentSettingsRecipient recipient) => Execute(() =>
+        deploymentSettingsRecipients.Add(recipient.DeploymentSettingsRecipientId, recipient));
+
+    public void RemoveDeploymentSettingsRecipients(Guid deploymentSettingsId) => Execute(() =>
+    {
+        var ids = deploymentSettingsRecipients.Values
+            .Where(item => item.DeploymentSettingsId == deploymentSettingsId)
+            .Select(item => item.DeploymentSettingsRecipientId)
+            .ToArray();
+        foreach (var id in ids)
+        {
+            deploymentSettingsRecipients.Remove(id);
+        }
+    });
 
     public void Execute(Action action)
     {

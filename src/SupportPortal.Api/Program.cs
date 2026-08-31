@@ -14,6 +14,7 @@ using SupportPortal.Api.Auth;
 using SupportPortal.Api.Configuration;
 using SupportPortal.Api.Middleware;
 using SupportPortal.Application.Notifications;
+using SupportPortal.Application.Settings;
 using SupportPortal.Infrastructure.Configuration;
 using SupportPortal.Infrastructure.Email;
 using SupportPortal.Infrastructure.Persistence;
@@ -26,28 +27,32 @@ builder.ConfigureFunctionsWebApplication();
 builder.UseMiddleware<CorrelationMiddleware>();
 builder.Services.AddAzureConfiguration(builder.Configuration);
 builder.Services.AddPortalPersistence(builder.Configuration);
+builder.Services.AddSettingsRuntime(builder.Configuration);
+builder.Services.AddScoped<GlobalSettingsService>();
 builder.Services.AddSendGridEmail(builder.Configuration.GetSection("SendGrid").Get<SendGridOptions>() ?? new SendGridOptions());
 builder.Services.AddScoped<NotificationScheduler>(serviceProvider =>
 	new NotificationScheduler(
 		serviceProvider.GetRequiredService<IPortalStore>(),
-		serviceProvider.GetRequiredService<SendGridOptions>().Enabled));
+		serviceProvider.GetRequiredService<RuntimeSettingsState>()));
 builder.Services.AddScoped<NotificationRecipientPlanner>(serviceProvider =>
 	new NotificationRecipientPlanner(
 		serviceProvider.GetRequiredService<IPortalStore>(),
-		serviceProvider.GetRequiredService<SendGridOptions>().GlobalSupportRecipients));
+		serviceProvider.GetRequiredService<RuntimeSettingsState>()));
 builder.Services.AddScoped<NotificationMessageComposer>(serviceProvider =>
 	new NotificationMessageComposer(
 		serviceProvider.GetRequiredService<IPortalStore>(),
 		serviceProvider.GetRequiredService<EffectiveBrandProfile>(),
 		serviceProvider.GetRequiredService<SendGridOptions>().PublicPortalUrl ?? "http://localhost:5258",
-		serviceProvider.GetRequiredService<IInvitationTokenService>()));
+		serviceProvider.GetRequiredService<IInvitationTokenService>(),
+		serviceProvider.GetRequiredService<RuntimeSettingsState>()));
 builder.Services.AddSingleton<NotificationRetryPolicy>(serviceProvider =>
 {
 	var options = serviceProvider.GetRequiredService<SendGridOptions>();
 	return new NotificationRetryPolicy(
 		options.MaximumAttempts,
 		TimeSpan.FromSeconds(options.MinimumBackoffSeconds),
-		TimeSpan.FromSeconds(options.MaximumBackoffSeconds));
+		TimeSpan.FromSeconds(options.MaximumBackoffSeconds),
+		runtimeSettings: serviceProvider.GetRequiredService<RuntimeSettingsState>());
 });
 builder.Services.AddScoped<NotificationDeliveryProcessor>(serviceProvider =>
 {
@@ -63,7 +68,8 @@ builder.Services.AddScoped<NotificationDeliveryProcessor>(serviceProvider =>
 		TimeSpan.FromSeconds(options.LeaseSeconds),
 		options.Enabled,
 		availability.CanSend,
-		options.BatchSize);
+		options.BatchSize,
+		serviceProvider.GetRequiredService<RuntimeSettingsState>());
 });
 builder.Services.AddScoped<EmailReadinessService>();
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);

@@ -54,6 +54,17 @@ local configuration. Use the sandbox readiness check before any explicitly confi
 not place a key, invitation token, recipient list, or ticket content in configuration examples or
 test output.
 
+For the current runtime settings workflow, start the API and client, sign in as the Development
+`global-admin` identity, and open `/settings`. Use the page for Branding, invitation acceptance,
+and SendGrid business settings. The API key field is write-only; blank preserves the current key and
+clear requires explicit confirmation. Keep Entra, SQL, Key Vault, Function authentication, and the
+invitation signing key in host-owned configuration.
+
+After saving, the current process activates immediately and other processes poll the shared revision
+every 30 seconds. Verify a second running process converges within 60 seconds. Use sandbox readiness
+first; only run live readiness with an approved recipient and explicit confirmation. A disabled or
+invalid profile must not call SendGrid or mutate notification work.
+
 ```powershell
 $env:SUPPORT_PORTAL_CLIENT_URL = 'http://localhost:5258'
 powershell -ExecutionPolicy Bypass -File .\tests\SupportPortal.UI.Tests\bin\Debug\net10.0\playwright.ps1 install
@@ -81,8 +92,8 @@ Remove-Item Env:SUPPORT_PORTAL_SQL_TEST_CONNECTION
 ```
 
 The placeholder above is an operator prompt, not a value to commit. Azure deployment, Domain
-Authentication, controlled live readiness, and clean-environment operator acceptance remain
-release-environment checks.
+Authentication, protected-secret permissions, controlled live readiness, and clean-environment
+operator acceptance remain release-environment checks.
 
 ## Manual Acceptance
 

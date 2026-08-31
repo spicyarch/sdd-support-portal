@@ -25,6 +25,25 @@ Support request pages use a two-second active refresh with ETag metadata. This i
 than introducing a real-time broker for the first release and can be replaced behind the application
 boundary if the five-second update objective is not met at scale.
 
+## Runtime Settings Activation
+
+Deployment-wide runtime-safe settings are stored as one `DeploymentSettings` row with normalized
+recipient rows. The row contains non-secret overrides and a protected-secret version reference; it
+never contains a SendGrid API-key value. When no override exists, the host configuration and built-in
+defaults remain the baseline.
+
+Each API process loads one immutable effective snapshot containing Branding, invitation values,
+SendGrid options, availability, and its active revision. The saving process refreshes immediately.
+Other processes poll the shared revision at most every 30 seconds and atomically swap the complete
+snapshot after validation, meeting the 60-second activation target without a restart. If a load or
+protected-secret read fails, the prior snapshot remains active and activation state reports the
+desired revision, safe failure category, invalid setting names, and scheduled retry state.
+
+The settings use case stages a replacement API key in Key Vault or protected configuration before
+committing the SQL reference and non-secret values. Blank input preserves the current key; explicit
+clear records a cleared mode that suppresses inherited host keys. API endpoints and client responses
+expose only configured state and safe activation metadata.
+
 ## Deployment Branding and SendGrid Delivery
 
 The API resolves one deployment-wide `Branding` profile into an effective public profile with

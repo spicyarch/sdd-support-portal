@@ -18,8 +18,11 @@ All notable changes to this project are documented here.
 - Production identity, tenant/audience, CORS, and invitation-signing configuration guards.
 - Deployment-wide accessible branding with logo/favicon fallbacks, effective titles, and configurable
   support contact details.
+- Global Administrator `/settings` page for runtime-safe Branding, invitation, and SendGrid settings,
+  with write-only protected API-key replacement/clear actions, ETag concurrency, safe validation,
+  activation status, and 60-second multi-instance hot activation.
 - Optional Twilio SendGrid Web API v3 request/reply/invitation notifications with atomic SQL
-  scheduling, private per-recipient delivery, bounded retry/recovery, Global Administrator readiness,
+  scheduling, private per-recipient delivery, bounded retry/recovery, sandbox/live readiness controls,
   and secret-safe operational signals.
 - Domain policies for team scope, request lifecycle, idempotent mutations, ETags, and final-admin
   protection.
@@ -37,3 +40,6 @@ All notable changes to this project are documented here.
   absence of a SendGrid `/mail/send` idempotency key means ambiguous post-acceptance network failures
   are bounded at-least-once for mailbox delivery; portal mutations and logical notifications remain
   duplicate-safe.
+- Runtime-safe settings are stored as a deployment-wide SQL profile with protected-secret references;
+  host security and infrastructure settings remain host-owned. Live mailbox delivery is never inferred
+  from provider acceptance alone.

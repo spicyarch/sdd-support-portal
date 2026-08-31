@@ -5,6 +5,7 @@ using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.Notifications;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Application.Common;
+using SupportPortal.Application.Settings;
 
 namespace SupportPortal.Application.Notifications;
 
@@ -19,11 +20,19 @@ public sealed class NotificationRecipientPlanner
 {
     private readonly IPortalStore store;
     private readonly IReadOnlyList<string> configuredGlobalRecipients;
+    private readonly RuntimeSettingsState? runtimeSettings;
 
     public NotificationRecipientPlanner(IPortalStore store, IReadOnlyList<string>? configuredGlobalRecipients)
     {
         this.store = store;
         this.configuredGlobalRecipients = NormalizeAddresses(configuredGlobalRecipients ?? []);
+    }
+
+    public NotificationRecipientPlanner(IPortalStore store, RuntimeSettingsState runtimeSettings)
+    {
+        this.store = store;
+        this.runtimeSettings = runtimeSettings;
+        configuredGlobalRecipients = [];
     }
 
     public IReadOnlyList<NotificationRecipientCandidate> Plan(Notification notification)
@@ -116,7 +125,7 @@ public sealed class NotificationRecipientPlanner
     private IReadOnlyList<NotificationRecipientCandidate> PlanConfiguredRecipients(Notification notification)
     {
         var actorEmail = NormalizeAddress(store.GetUser(notification.ActorUserId)?.Email);
-        var candidates = configuredGlobalRecipients
+        var candidates = CurrentGlobalRecipients
             .Where(address => !StringComparer.OrdinalIgnoreCase.Equals(address, actorEmail))
             .Where(address => IsConfiguredMailboxEligible(address))
             .Select(address => new NotificationRecipientCandidate(
@@ -242,4 +251,9 @@ public sealed class NotificationRecipientPlanner
 
     private static string HashKey(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private IReadOnlyList<string> CurrentGlobalRecipients =>
+        runtimeSettings is null
+            ? configuredGlobalRecipients
+            : NormalizeAddresses(runtimeSettings.Current.SendGrid.GlobalSupportRecipients);
 }

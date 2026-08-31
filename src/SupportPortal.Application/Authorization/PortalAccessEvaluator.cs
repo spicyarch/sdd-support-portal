@@ -17,6 +17,9 @@ public sealed class PortalAccessEvaluator
 
     public bool CanManageGlobalAccess(PortalPrincipal principal) => principal.IsGlobalAdministrator;
 
+    public bool CanManageSettings(PortalPrincipal principal) =>
+        principal.IsActive && principal.IsGlobalAdministrator;
+
     public bool CanManageTeamUsers(PortalPrincipal principal, Guid teamId) =>
         principal.IsGlobalAdministrator || (principal.IsTeamAdministrator && principal.TeamId == teamId);
 }

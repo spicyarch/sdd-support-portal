@@ -1,0 +1,18 @@
+{
+  "workflow": "companion",
+  "specName": "001-support-portal-rbac",
+  "branch": "001-support-portal-rbac",
+  "selectedAt": "2026-08-30T23:46:51.286Z",
+  "currentStep": "specify",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-30T23:48:01.442Z"
+    }
+  ],
+  "telemetryInstanceId": "d9a1f337-9d04-4f19-99c6-85ca428e209f"
+}

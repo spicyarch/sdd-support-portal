@@ -15,6 +15,11 @@ public sealed class EmailReadinessContractTests
         Assert.Contains("providerHttpStatus", contract);
         Assert.Contains("invalidSettingNames", contract);
         Assert.Contains("NoProviderRequestMade", contract);
+        Assert.Contains("ProviderRejected", contract);
+        Assert.Contains("ProviderUnavailable", contract);
+        Assert.Contains("NoEmailSent", contract);
+        Assert.Contains("AcceptedBySendGridMailboxDeliveryUnconfirmed", contract);
+        Assert.Contains("NetworkUnavailable", contract);
         Assert.DoesNotContain("apiKey:", contract, StringComparison.OrdinalIgnoreCase);
     }
 }

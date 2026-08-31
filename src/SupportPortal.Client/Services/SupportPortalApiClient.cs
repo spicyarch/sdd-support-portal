@@ -4,6 +4,8 @@ using SupportPortal.Contracts.Auditing;
 using SupportPortal.Contracts.Authorization;
 using SupportPortal.Contracts.Branding;
 using SupportPortal.Contracts.Requests;
+using SupportPortal.Contracts.Operations;
+using SupportPortal.Contracts.Settings;
 using SupportPortal.Contracts.Teams;
 
 namespace SupportPortal.Client.Services;
@@ -39,6 +41,48 @@ public sealed class SupportPortalApiClient
 
         await EnsureSuccess(response);
         return await response.Content.ReadFromJsonAsync<EffectiveBrandingResponse>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<GlobalSettingsResponse?> GetGlobalSettingsAsync(
+        string? etag = null,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "settings");
+        if (!string.IsNullOrWhiteSpace(etag))
+        {
+            request.Headers.TryAddWithoutValidation("If-None-Match", $"\"{etag}\"");
+        }
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotModified)
+        {
+            return null;
+        }
+
+        await EnsureSuccess(response);
+        return await response.Content.ReadFromJsonAsync<GlobalSettingsResponse>(cancellationToken: cancellationToken);
+    }
+
+    public async Task<GlobalSettingsResponse> UpdateGlobalSettingsAsync(
+        string rowVersion,
+        UpdateGlobalSettingsRequest input,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateMutationRequest(HttpMethod.Put, "settings", input);
+        request.Headers.TryAddWithoutValidation("If-Match", $"\"{rowVersion}\"");
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        await EnsureSuccess(response);
+        return (await response.Content.ReadFromJsonAsync<GlobalSettingsResponse>(cancellationToken: cancellationToken))!;
+    }
+
+    public async Task<EmailReadinessResult> CheckEmailReadinessAsync(
+        EmailReadinessRequest input,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateMutationRequest(HttpMethod.Post, "operations/email/readiness", input);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        await EnsureSuccess(response);
+        return (await response.Content.ReadFromJsonAsync<EmailReadinessResult>(cancellationToken: cancellationToken))!;
     }
 
     public async Task<SupportRequestPageResponse?> ListRequestsAsync(string? etag = null, CancellationToken cancellationToken = default)

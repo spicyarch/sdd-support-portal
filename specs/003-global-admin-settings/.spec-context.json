@@ -1,0 +1,1343 @@
+{
+  "workflow": "companion",
+  "telemetryInstanceId": "ed5f03e0-01ef-4b0c-a49b-ee5b566fd756",
+  "specName": "Global Admin Settings",
+  "branch": "main",
+  "selectedAt": "2026-08-30T23:57:56.060Z",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-30T23:57:56.060Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-31T00:04:28.856Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-31T00:30:03.192Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T00:41:56.420Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T00:45:30.577Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-31T00:45:30.872Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-31T00:47:14.835Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T00:54:45.634Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-31T00:54:45.940Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-31T01:00:17.060Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:01:27.108Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:02:33.399Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:03:32.106Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:05:16.078Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:06:42.822Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:07:32.168Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:10:23.220Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:12:10.190Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:12:20.337Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:12:31.030Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:13:09.469Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:15:15.880Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:16:16.094Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:18:05.600Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:19:00.665Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:20:00.303Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:23:51.620Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:24:56.978Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:25:40.594Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:26:33.537Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:28:31.375Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:30:38.453Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:31:44.079Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:32:21.704Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:32:58.345Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:34:24.478Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:35:16.717Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:36:58.114Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:37:40.459Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:38:28.099Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:40:08.471Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:40:21.803Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:48:04.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:48:11.996Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:48:26.408Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:50:06.713Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:50:33.021Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:53:50.086Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T01:54:45.963Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:01:39.528Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:01:45.970Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:03:04.994Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:03:40.608Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:09:08.894Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:09:16.187Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:16:02.554Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:16:09.875Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:16:39.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:00.836Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:08.979Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:16.282Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:24.872Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:32.417Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:38.952Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:19:46.871Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:20:14.163Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T057",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-31T02:21:46.336Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-31T02:21:53.443Z"
+    }
+  ],
+  "coverage": {
+    "FR-001": {
+      "title": "The portal MUST allow only an active Global Administrator to view, save, clear, or test deployment settings; every other role MUST receive a denied result without setting data.",
+      "tasks": [
+        "T022",
+        "T023",
+        "T033",
+        "T034",
+        "T038"
+      ]
+    },
+    "FR-002": {
+      "title": "The settings page MUST expose the complete deployment-wide Branding profile: product name, short product name, logo URL, favicon URL, primary color, accent color, focus color, support contact name, support contact email, and optional organization name.",
+      "tasks": [
+        "T004",
+        "T005",
+        "T022",
+        "T026"
+      ]
+    },
+    "FR-003": {
+      "title": "The settings page MUST expose all other currently supported runtime-safe business settings: invitation acceptance base URL, invitation lifetime, and the complete SendGrid profile of enabled state, API key, sender display name, sender address, reply-to address, global-support recipient addresses, public portal URL, HTTP timeout, maximum attempts, minimum backoff, maximum backoff, data residency, batch size, and lease duration.",
+      "tasks": [
+        "T004",
+        "T005",
+        "T022",
+        "T026"
+      ]
+    },
+    "FR-004": {
+      "title": "The page MUST show the current effective values for non-secret settings, clearly distinguish saved values from unsaved edits, and show whether outbound email is Disabled, Ready, or Invalid Configuration using only safe diagnostic information.",
+      "tasks": [
+        "T013",
+        "T016",
+        "T018",
+        "T026",
+        "T044"
+      ]
+    },
+    "FR-005": {
+      "title": "The settings experience MUST remain usable with keyboard input, enlarged text, narrow mobile layouts, and wide desktop layouts without hiding required fields or actions.",
+      "tasks": [
+        "T026",
+        "T029",
+        "T036",
+        "T042",
+        "T057"
+      ]
+    },
+    "FR-006": {
+      "title": "A successful settings save MUST durably preserve the deployment-wide values across browser reloads and application restarts.",
+      "tasks": [
+        "T008",
+        "T009",
+        "T012",
+        "T021",
+        "T033",
+        "T046",
+        "T057"
+      ]
+    },
+    "FR-007": {
+      "title": "The system MUST use existing host configuration and built-in defaults when no administrator-managed override exists, and MUST establish a deterministic precedence between those values and saved settings.",
+      "tasks": [
+        "T007",
+        "T013",
+        "T022"
+      ]
+    },
+    "FR-008": {
+      "title": "Every successfully saved value MUST become effective across all running application instances within 60 seconds without a restart, and the page MUST show whether activation is still in progress or has failed.",
+      "tasks": [
+        "T013",
+        "T044",
+        "T046",
+        "T057"
+      ]
+    },
+    "FR-009": {
+      "title": "A settings save MUST be all-or-nothing: no invalid or partially updated combination may become effective.",
+      "tasks": [
+        "T022",
+        "T031",
+        "T033",
+        "T034"
+      ]
+    },
+    "FR-010": {
+      "title": "The system MUST detect a stale settings view and MUST prevent it from silently overwriting a newer successful save.",
+      "tasks": [
+        "T022",
+        "T023",
+        "T033",
+        "T034"
+      ]
+    },
+    "FR-011": {
+      "title": "Disabling SendGrid MUST stop new notification scheduling and provider delivery while preserving accepted support requests, replies, invitations, and existing durable notification history.",
+      "tasks": [
+        "T017",
+        "T045"
+      ]
+    },
+    "FR-012": {
+      "title": "Re-enabling valid SendGrid settings MUST make eligible pending or retryable work available without creating duplicate logical notifications or recipient deliveries.",
+      "tasks": [
+        "T017",
+        "T045"
+      ]
+    },
+    "FR-013": {
+      "title": "The system MUST reject blank, malformed, unsafe, out-of-range, or mutually inconsistent values before saving, including an unusable invitation acceptance base URL or unsupported invitation lifetime, and MUST identify every affected setting by name.",
+      "tasks": [
+        "T007",
+        "T022",
+        "T031",
+        "T033"
+      ]
+    },
+    "FR-014": {
+      "title": "Branding validation MUST enforce the existing length, URL, color, email, fallback, and accessibility rules used by the effective deployment brand.",
+      "tasks": [
+        "T007",
+        "T016",
+        "T033"
+      ]
+    },
+    "FR-015": {
+      "title": "When SendGrid is enabled, validation MUST require a usable API key, sender display name, sender address, reply-to address, at least one valid global-support recipient, and a valid public portal URL.",
+      "tasks": [
+        "T007",
+        "T022",
+        "T038",
+        "T040"
+      ]
+    },
+    "FR-016": {
+      "title": "SendGrid validation MUST enforce supported data residency, timeout, attempt, backoff, batch, and lease boundaries, including the relationship between timeout and lease duration.",
+      "tasks": [
+        "T007",
+        "T033"
+      ]
+    },
+    "FR-017": {
+      "title": "The API key MUST be write-only in the settings experience: it MUST be masked on screen, omitted from read results, and never included in logs, traces, telemetry, audit records, health details, error messages, readiness results, or notification data.",
+      "tasks": [
+        "T011",
+        "T012",
+        "T022",
+        "T031",
+        "T035"
+      ]
+    },
+    "FR-018": {
+      "title": "A blank API key submission MUST preserve the existing key by default, while clearing the key MUST require an explicit administrator action and confirmation.",
+      "tasks": [
+        "T031",
+        "T032",
+        "T033",
+        "T036"
+      ]
+    },
+    "FR-019": {
+      "title": "Secret and recipient values MUST be stored and handled through protected operational storage and MUST NOT be written to checked-in configuration, support-request data, or browser storage.",
+      "tasks": [
+        "T001",
+        "T002",
+        "T011",
+        "T031",
+        "T035"
+      ]
+    },
+    "FR-020": {
+      "title": "Validation errors, save errors, and provider errors MUST expose safe categories and setting names only; they MUST NOT expose secret values, provider response bodies, or message content.",
+      "tasks": [
+        "T007",
+        "T011",
+        "T018",
+        "T031",
+        "T033",
+        "T035"
+      ]
+    },
+    "FR-021": {
+      "title": "The settings page MUST provide a readiness check for the saved SendGrid configuration that is separate from support-request, reply, invitation, and notification processing.",
+      "tasks": [
+        "T038",
+        "T039",
+        "T040",
+        "T041"
+      ]
+    },
+    "FR-022": {
+      "title": "A sandbox readiness check MUST verify HTTPS connectivity, API authentication, required permission, payload validation, and sender readiness as supported by the provider, while sending no email and creating no business or notification record.",
+      "tasks": [
+        "T038",
+        "T040",
+        "T041"
+      ]
+    },
+    "FR-023": {
+      "title": "A live readiness check MUST require a valid administrator-supplied test recipient and explicit confirmation before sending one clearly identified test message.",
+      "tasks": [
+        "T038",
+        "T039",
+        "T041",
+        "T042"
+      ]
+    },
+    "FR-024": {
+      "title": "Readiness results MUST distinguish disabled, invalid configuration, provider unavailable, provider rejected, sandbox no-email, and provider-accepted-but-mailbox-unconfirmed outcomes.",
+      "tasks": [
+        "T018",
+        "T038",
+        "T040",
+        "T041"
+      ]
+    },
+    "FR-025": {
+      "title": "Readiness testing MUST not consume, alter, duplicate, or delay ordinary pending notification work, and a test failure MUST not change support records.",
+      "tasks": [
+        "T038",
+        "T040",
+        "T041",
+        "T045"
+      ]
+    },
+    "FR-026": {
+      "title": "The readiness action MUST re-check that the caller is an active Global Administrator before contacting the provider.",
+      "tasks": [
+        "T038",
+        "T041"
+      ]
+    },
+    "FR-027": {
+      "title": "Successful saves, rejected saves, secret replacement or clearing, and readiness checks MUST produce an auditable outcome containing actor, action, time, correlation, and safe setting or stage names without values, credentials, recipient lists, or message content.",
+      "tasks": [
+        "T020",
+        "T022",
+        "T031",
+        "T038",
+        "T047"
+      ]
+    },
+    "FR-028": {
+      "title": "The settings page MUST show when the effective email readiness state was last evaluated and MUST identify safe invalid setting names when configuration is not ready.",
+      "tasks": [
+        "T018",
+        "T026",
+        "T044",
+        "T047"
+      ]
+    },
+    "FR-029": {
+      "title": "If loading, saving, applying, or testing settings fails, the page MUST preserve the last known safe state, explain the next available action, and avoid presenting unsaved data as active configuration.",
+      "tasks": [
+        "T013",
+        "T026",
+        "T032",
+        "T044",
+        "T047"
+      ]
+    },
+    "FR-030": {
+      "title": "The settings page MUST be limited to values explicitly designated as runtime-safe and administrator-managed, currently Branding, invitation acceptance base URL, invitation lifetime, and SendGrid; generic SMTP provider settings, database connections, authentication authority, bootstrap controls, allowed origins, telemetry credentials, logging, cryptographic keys other than the SendGrid credential, and other host-security settings remain outside the administrator page.",
+      "tasks": [
+        "T002",
+        "T004",
+        "T022",
+        "T049",
+        "T054"
+      ]
+    }
+  },
+  "classification": {
+    "projectedFiles": 26,
+    "projectedTasks": 36,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "size": "oversized",
+  "intent": "Give active Global Administrators one secure, durable page to manage deployment branding and SendGrid email settings and verify outbound email readiness.",
+  "expectations": [
+    "Generic SMTP support remains unresolved until clarify; current scope is the existing SendGrid Web API integration.",
+    "Host security, database, authentication, bootstrap, telemetry, and logging settings remain outside the administrator page.",
+    "Sandbox readiness checks do not send live email or create support records."
+  ],
+  "context": [
+    "area: existing deployment Branding and SendGrid configuration surface",
+    "area: Global Administrator access and Administration page",
+    "area: SendGrid readiness and notification lifecycle",
+    "constraint: API keys and other secrets never appear in client-visible or operational data",
+    "constraint: existing team isolation and role authorization remain enforced"
+  ],
+  "approach": "Persist non-secret runtime-safe settings in one versioned SQL profile, keep the SendGrid API key behind a protected secret port, and publish one immutable effective snapshot per running instance. Use ETags and idempotency for safe edits, poll the shared revision within 30 seconds, and reuse the existing readiness operation against the current snapshot.",
+  "decisions": [
+    {
+      "decision": "Persist non-secret settings in the existing SQL store because a shared versioned row survives restarts and supports concurrency; reject appsettings mutation because it is process-local and not twelve-factor."
+    },
+    {
+      "decision": "Keep the SendGrid API key outside SQL behind a protected secret port because the existing security boundary forbids secrets in SQL and client or operational data; reject encrypted SQL storage because it adds another key lifecycle."
+    },
+    {
+      "decision": "Refresh each process from a shared settings revision at most every 30 seconds and swap one immutable snapshot because this meets the 60-second activation target without a broker; reject restart-only activation."
+    },
+    {
+      "decision": "Stage replacement secrets before committing the SQL settings revision because a database failure must leave the old revision active; reject a distributed SQL and Key Vault transaction."
+    },
+    {
+      "decision": "Add a redacted GET and PUT settings resource and reuse the existing email readiness operation because current ETag, If-Match, Idempotency-Key, and readiness contracts already fit; reject duplicate generic configuration and readiness routes."
+    },
+    {
+      "decision": "Move branding, invitation, notification, readiness, and health consumers behind the runtime snapshot because startup-bound singletons would keep stale values active; reject parallel static and dynamic option paths."
+    },
+    {
+      "decision": "Expose invitation URL and lifetime but keep the invitation signing key host-managed because key rotation could invalidate pending invitations; reject in-portal cryptographic key rotation."
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Full plan with research, data model, API and UI contracts for an oversized settings workflow; the load-bearing finding is that startup-bound options require one revisioned runtime snapshot."
+    },
+    "tasks": {
+      "summary": "57 dependency-ordered tasks across Setup, Foundational, four user stories, and Polish; each wave has explicit joins and the full validation suite has one owner."
+    }
+  },
+  "currentTask": "T057",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Added the centrally managed Azure Key Vault Secrets dependency for protected secret storage.",
+      "files": [
+        "Directory.Packages.props",
+        "src/SupportPortal.Infrastructure/SupportPortal.Infrastructure.csproj"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Added host-owned Key Vault metadata and preserved disabled-by-default SendGrid configuration.",
+      "files": [
+        "src/SupportPortal.Api/appsettings.json",
+        "src/SupportPortal.Api/local.settings.example.json",
+        "src/SupportPortal.Infrastructure/Configuration/AzureOptions.cs"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Wired the Global Administrator settings OpenAPI contract into contract tests and added redaction/concurrency assertions.",
+      "files": [
+        "tests/SupportPortal.ContractTests/SupportPortal.ContractTests.csproj",
+        "tests/SupportPortal.ContractTests/SupportPortalApiContractTests.cs"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Added the deployment settings aggregate, normalized recipient entity, API-key modes, and settings source types.",
+      "files": [
+        "src/SupportPortal.Domain/Settings/DeploymentSettings.cs",
+        "src/SupportPortal.Domain/Settings/SettingsApiKeyMode.cs",
+        "src/SupportPortal.Domain/Settings/SettingsSource.cs"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Defined redacted settings response, complete update request, API-key actions, activation, availability, and safe diagnostics contracts.",
+      "files": [
+        "src/SupportPortal.Contracts/Settings/GlobalSettingsContracts.cs"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Extended IPortalStore with deployment settings and normalized recipient persistence operations.",
+      "files": [
+        "src/SupportPortal.Application/Abstractions/IPortalStore.cs"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Added application-owned merged settings validation for Branding, invitations, SendGrid limits, recipients, API-key actions, and safe errors.",
+      "files": [
+        "src/SupportPortal.Application/Settings/SettingsCandidateValidator.cs",
+        "src/SupportPortal.Application/Settings/InvitationSettingsValidator.cs"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Added thread-safe in-memory deployment settings and normalized recipient persistence.",
+      "files": [
+        "src/SupportPortal.Infrastructure/Persistence/InMemoryPortalStore.cs"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Implemented EF-backed deployment settings and recipient persistence operations with transaction support.",
+      "files": [
+        "src/SupportPortal.Infrastructure/Persistence/EfPortalStore.cs"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Added EF Core singleton, uniqueness, concurrency, API-key-reference, and recipient mappings.",
+      "files": [
+        "src/SupportPortal.Infrastructure/Persistence/SupportPortalDbContext.cs",
+        "src/SupportPortal.Infrastructure/Persistence/Configurations/DeploymentSettingsConfiguration.cs",
+        "src/SupportPortal.Infrastructure/Persistence/Configurations/DeploymentSettingsRecipientConfiguration.cs",
+        "src/SupportPortal.Domain/Settings/DeploymentSettings.cs"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Added the protected-secret application port and Key Vault adapter with managed-identity access and redacted failure categories.",
+      "files": [
+        "src/SupportPortal.Application/Abstractions/IProtectedSecretStore.cs",
+        "src/SupportPortal.Infrastructure/Configuration/KeyVaultSecretStore.cs"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Added a settings-only Azure SQL migration with singleton, recipient, uniqueness, foreign-key, and API-key-reference constraints.",
+      "files": [
+        "src/SupportPortal.Infrastructure/Persistence/Migrations/202608300003_AddGlobalAdminSettings.cs"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Added immutable effective settings snapshots, thread-safe activation state, 30-second revision polling, and last-known-good recovery.",
+      "files": [
+        "src/SupportPortal.Application/Settings/EffectiveSettingsSnapshot.cs",
+        "src/SupportPortal.Application/Settings/RuntimeSettingsState.cs",
+        "src/SupportPortal.Application/Settings/SettingsRefreshCoordinator.cs"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Registered dynamic settings runtime loading, protected-secret selection, immutable state, and refresh coordination in the API composition root.",
+      "files": [
+        "src/SupportPortal.Infrastructure/Configuration/ManagedIdentityRegistration.cs",
+        "src/SupportPortal.Infrastructure/Configuration/ConfigurationProtectedSecretStore.cs",
+        "src/SupportPortal.Infrastructure/Configuration/SettingsRuntimeRegistration.cs",
+        "src/SupportPortal.Api/Program.cs"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Moved invitation acceptance URL and lifetime reads to runtime settings while retaining host-managed signing keys.",
+      "files": [
+        "src/SupportPortal.Infrastructure/Persistence/Bootstrap/ConfiguredInvitationTokenService.cs"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Moved anonymous Branding responses to runtime snapshot refresh and reduced public cache duration to support hot activation.",
+      "files": [
+        "src/SupportPortal.Api/Endpoints/BrandingEndpoint.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Branding/BrandingEndpointTests.cs"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Moved notification scheduling, recipient selection, composition, retry limits, leases, batch size, and SendGrid delivery to runtime snapshot settings.",
+      "files": [
+        "src/SupportPortal.Application/Notifications/NotificationScheduler.cs",
+        "src/SupportPortal.Application/Notifications/NotificationRecipientPlanner.cs",
+        "src/SupportPortal.Application/Notifications/NotificationMessageComposer.cs",
+        "src/SupportPortal.Application/Notifications/NotificationRetryPolicy.cs",
+        "src/SupportPortal.Application/Notifications/NotificationDeliveryProcessor.cs",
+        "src/SupportPortal.Infrastructure/Email/SendGridEmailGateway.cs",
+        "src/SupportPortal.Api/Program.cs"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Made readiness and health refresh current runtime settings and expose only redacted availability and activation diagnostics.",
+      "files": [
+        "src/SupportPortal.Application/Notifications/EmailReadinessService.cs",
+        "src/SupportPortal.Api/Endpoints/HealthEndpoint.cs"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Allowed PUT through the shared CORS policy while preserving centralized ETag, If-Match, idempotency, and problem response handling.",
+      "files": [
+        "src/SupportPortal.Api/Middleware/ApiResponse.cs"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Added the settings audit metadata allowlist and secret-safe idempotency fingerprint policy.",
+      "files": [
+        "src/SupportPortal.Application/Settings/SettingsAuditPolicy.cs",
+        "src/SupportPortal.Application/Commands/IdempotencyService.cs"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Added foundational domain, validation/fingerprint, and EF persistence tests for settings invariants, precedence, recipients, concurrency shape, and secret boundaries.",
+      "files": [
+        "tests/SupportPortal.Domain.Tests/Settings/SettingsRulesTests.cs",
+        "tests/SupportPortal.Application.Tests/Settings/SettingsValidationTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Persistence/SettingsPersistenceTests.cs"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Implemented the Global Administrator settings application service with access checks, merged validation, staged secret handling, atomic persistence, ETags, idempotency, safe audit metadata, and runtime refresh.",
+      "files": [
+        "src/SupportPortal.Application/Authorization/PortalAccessEvaluator.cs",
+        "src/SupportPortal.Application/Settings/GlobalSettingsService.cs"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Added Global Administrator GET/PUT settings Functions with authorization, ETags, If-Match, idempotency, safe errors, and DI registration.",
+      "files": [
+        "src/SupportPortal.Api/Endpoints/GlobalSettingsEndpoint.cs",
+        "src/SupportPortal.Api/Program.cs"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Added typed conditional settings reads, optimistic updates, and email readiness calls to the client API service.",
+      "files": [
+        "src/SupportPortal.Client/Services/SupportPortalApiClient.cs"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Added the Global Administrator-only Settings navigation link for /settings.",
+      "files": [
+        "src/SupportPortal.Client/Layout/NavMenu.razor"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Built the responsive /settings page with grouped Branding, invitation, SendGrid forms, effective status, stable identifiers, and safe save/discard states.",
+      "files": [
+        "src/SupportPortal.Client/Pages/Settings.razor",
+        "src/SupportPortal.Client/Pages/Settings.razor.css"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "Centralized safe BrandingState application and retained layout change notifications for post-save brand refresh.",
+      "files": [
+        "src/SupportPortal.Client/Branding/BrandingState.cs",
+        "src/SupportPortal.Client/Layout/MainLayout.razor"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Added settings API contract and integration coverage for role denial, redacted reads, ETags, 304 responses, valid save, and persistence.",
+      "files": [
+        "tests/SupportPortal.ContractTests/Settings/GlobalSettingsContractTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Settings/GlobalSettingsEndpointTests.cs",
+        "src/SupportPortal.Api/Endpoints/GlobalSettingsEndpoint.cs",
+        "src/SupportPortal.Api/Program.cs"
+      ]
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "Added the responsive Playwright Global Administrator settings journey for required viewports, stable regions, keyboard focus, and overflow checks.",
+      "files": [
+        "tests/SupportPortal.UI.Tests/Settings/GlobalSettingsJourneyTests.cs"
+      ]
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "Recorded User Story 1 quickstart and verified settings contract/API load-save behavior; responsive browser acceptance remains live-environment dependent.",
+      "files": [
+        "specs/003-global-admin-settings/quickstart.md"
+      ]
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "Refactored settings saves to validate concurrency before staging secrets, commit only protected references, preserve blank keys, support clear mode, and refresh after commit.",
+      "files": [
+        "src/SupportPortal.Application/Settings/GlobalSettingsService.cs",
+        "src/SupportPortal.Infrastructure/Configuration/KeyVaultSecretStore.cs",
+        "src/SupportPortal.Infrastructure/Persistence/EfPortalStore.cs"
+      ]
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "Added explicit API-key clear confirmation, blank-key preservation, validation summary, conflict recovery, and last-safe-state UI handling.",
+      "files": [
+        "src/SupportPortal.Client/Pages/Settings.razor",
+        "src/SupportPortal.Client/Pages/Settings.razor.css"
+      ]
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "Added application coverage for validation boundaries, effective-value precedence, secret action semantics, atomic invalid saves, and stale revision handling.",
+      "files": [
+        "tests/SupportPortal.Application.Tests/Settings/GlobalSettingsServiceTests.cs",
+        "tests/SupportPortal.Application.Tests/Settings/SettingsCandidateValidatorTests.cs"
+      ]
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "Added protected-secret failure, stale and idempotent mutation coverage plus EF rollback, concurrency-token, protected-reference, and no-raw-key persistence checks.",
+      "files": [
+        "tests/SupportPortal.Api.IntegrationTests/Settings/GlobalSettingsSecurityTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Persistence/SettingsConcurrencyTests.cs"
+      ]
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "Added secret-safe audit fingerprint, readiness metadata, settings response, health diagnostics, and persistence redaction coverage.",
+      "files": [
+        "tests/SupportPortal.Application.Tests/Settings/SettingsRedactionTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Observability/SettingsRedactionTests.cs"
+      ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "Added skipped Playwright coverage for masked write-only API keys, clear confirmation, validation-summary focus, conflict draft preservation, browser-storage checks, and safe error text.",
+      "files": [
+        "src/SupportPortal.Client/Pages/Settings.razor",
+        "tests/SupportPortal.UI.Tests/Settings/GlobalSettingsSecurityJourneyTests.cs"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "Recorded User Story 2 accepted validation, stale/conflict, secret replacement/preservation/clear, failure rollback, redaction, and focused test evidence without credentials or recipient values.",
+      "files": [
+        "specs/003-global-admin-settings/quickstart.md"
+      ]
+    },
+    "T038": {
+      "status": "DONE",
+      "did": "Added saved runtime snapshot readiness behavior, active administrator recheck around provider execution, and safe readiness audit recording while preserving sandbox and live provider meanings.",
+      "files": [
+        "src/SupportPortal.Application/Notifications/EmailReadinessService.cs",
+        "src/SupportPortal.Application/Settings/SettingsAuditPolicy.cs",
+        "tests/SupportPortal.Application.Tests/Notifications/EmailReadinessServiceTests.cs",
+        "tests/SupportPortal.Application.Tests/Notifications/SendGridEmailGatewayTests.cs"
+      ]
+    },
+    "T039": {
+      "status": "DONE",
+      "did": "Replaced the readiness placeholder with saved-settings gating, sandbox/live mode controls, explicit live recipient confirmation, disabled/loading states, safe result/error output, and result focus.",
+      "files": [
+        "src/SupportPortal.Client/Pages/Settings.razor",
+        "src/SupportPortal.Client/Pages/Settings.razor.css"
+      ]
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "Added readiness application coverage for disabled, invalid, sandbox, live, provider rejection, provider unavailable, no-email, mailbox-unconfirmed, network failure, and runtime-snapshot outcomes.",
+      "files": [
+        "tests/SupportPortal.Application.Tests/Notifications/EmailReadinessServiceTests.cs",
+        "tests/SupportPortal.Application.Tests/Notifications/SendGridEmailGatewayTests.cs"
+      ]
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "Extended readiness API integration and contract coverage for authorization, explicit live confirmation, invalid-input provider isolation, notification isolation, safe outcomes, and redacted audit/response metadata.",
+      "files": [
+        "tests/SupportPortal.Api.IntegrationTests/Operations/EmailReadinessIntegrationTests.cs",
+        "tests/SupportPortal.ContractTests/Operations/EmailReadinessContractTests.cs",
+        "tests/SupportPortal.ContractTests/Settings/GlobalSettingsContractTests.cs"
+      ]
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "Added skipped Playwright readiness coverage for saved-settings gating, sandbox no-email result, live recipient and confirmation protection, provider-accepted meaning, and result focus restoration.",
+      "files": [
+        "tests/SupportPortal.UI.Tests/Settings/GlobalSettingsReadinessJourneyTests.cs"
+      ]
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "Recorded User Story 3 fake-provider readiness outcomes, authorization and confirmation protections, notification isolation, safe audit evidence, and browser-test limitations without credentials, recipients, or mailbox claims.",
+      "files": [
+        "specs/003-global-admin-settings/quickstart.md"
+      ]
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "Exposed safe active and desired revisions, refresh timestamps, failure categories, and explicit retry state in the settings response, contract, and page status region.",
+      "files": [
+        "src/SupportPortal.Contracts/Settings/GlobalSettingsContracts.cs",
+        "src/SupportPortal.Application/Settings/GlobalSettingsService.cs",
+        "src/SupportPortal.Api/Endpoints/GlobalSettingsEndpoint.cs",
+        "src/SupportPortal.Client/Pages/Settings.razor",
+        "tests/SupportPortal.Api.IntegrationTests/Settings/GlobalSettingsEndpointTests.cs",
+        "tests/SupportPortal.ContractTests/Settings/GlobalSettingsContractTests.cs"
+      ]
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "Verified runtime disablement stops new scheduling and provider delivery, preserves pending durable work, resumes eligible work after valid re-enable without duplicates, and keeps health counts intact.",
+      "files": [
+        "src/SupportPortal.Application/Notifications/NotificationScheduler.cs",
+        "src/SupportPortal.Application/Notifications/NotificationDeliveryProcessor.cs",
+        "src/SupportPortal.Api/Endpoints/HealthEndpoint.cs",
+        "tests/SupportPortal.Application.Tests/Notifications/NotificationSchedulingTests.cs",
+        "tests/SupportPortal.Application.Tests/Notifications/NotificationRuntimeSettingsTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Observability/HealthRuntimeSettingsTests.cs"
+      ]
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "Added coordinator and EF-backed activation coverage for shared multi-instance revisions, 30-second polling, immediate refresh, interrupted-load recovery, last-known-good retention, and restart persistence.",
+      "files": [
+        "tests/SupportPortal.Application.Tests/Settings/SettingsRefreshCoordinatorTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Settings/SettingsActivationIntegrationTests.cs"
+      ]
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "Added safe save/reject/key/readiness audit coverage, activation failure and last-known-good response checks, health count continuity, and UI status-region accessibility/redaction journeys.",
+      "files": [
+        "tests/SupportPortal.Api.IntegrationTests/Observability/SettingsOperationsObservabilityTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Observability/HealthRuntimeSettingsTests.cs",
+        "tests/SupportPortal.Api.IntegrationTests/Observability/HealthEndpointTests.cs",
+        "tests/SupportPortal.UI.Tests/Settings/GlobalSettingsOperationsJourneyTests.cs"
+      ]
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "Recorded User Story 4 activation, interrupted-refresh recovery, runtime disable/re-enable, durable work preservation, duplicate prevention, audit, and health evidence without sensitive values.",
+      "files": [
+        "specs/003-global-admin-settings/quickstart.md"
+      ]
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "Replaced restart-only branding and SendGrid guidance with the Global Administrator settings workflow, runtime-safe scope, hot activation, readiness, and protected key handling.",
+      "files": [
+        "docs/how-to/configure-branding-and-sendgrid.md"
+      ]
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "Documented settings GET/PUT endpoints, Global Administrator authorization, ETags, If-Match/idempotency, redaction, and readiness semantics in the API reference.",
+      "files": [
+        "docs/reference/api.md"
+      ]
+    },
+    "T051": {
+      "status": "DONE",
+      "did": "Updated architecture and observability explanations for SQL settings revisions, protected secrets, immutable runtime snapshots, polling, activation recovery, health, and audit events.",
+      "files": [
+        "docs/explanation/architecture.md",
+        "docs/explanation/observability.md"
+      ]
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "Added settings migration backup, forward-repair, staged-secret cleanup, activation recovery, and pending-notification preservation guidance.",
+      "files": [
+        "docs/how-to/database-recovery.md"
+      ]
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "Updated local Windows and VS Code deployment procedures for settings-page setup, disabled defaults, protected-secret prerequisites, readiness, and multi-instance activation checks.",
+      "files": [
+        "docs/tutorials/run-and-test-locally-windows.md",
+        "docs/how-to/deploy-dev-with-vscode.md"
+      ]
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "Extended the security review for settings authorization, write-only secrets, protected storage, redaction, concurrency, provider isolation, activation recovery, and host-security scope.",
+      "files": [
+        "docs/reference/security-review.md"
+      ]
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "Recorded the settings page, hot activation, protected key handling, readiness controls, migration compatibility, and host-owned configuration boundary in the unreleased changelog.",
+      "files": [
+        "CHANGELOG.md"
+      ]
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "Completed the feature quickstart with settings-page prerequisites, all user-story acceptance workflows, protected key handling, readiness modes, activation/recovery, disablement, and safe evidence rules.",
+      "files": [
+        "specs/003-global-admin-settings/quickstart.md"
+      ]
+    },
+    "T057": {
+      "status": "DONE",
+      "did": "Completed the authoritative restore, Release solution build, full solution test run, all three OpenAPI contract lint checks, UI compile/accessibility coverage, and final diff validation; 159 tests completed with 142 passing and 17 expected SQL/browser skips.",
+      "files": [
+        "build/verify.ps1",
+        "src/SupportPortal.sln",
+        "tests/SupportPortal.Domain.Tests",
+        "tests/SupportPortal.Application.Tests",
+        "tests/SupportPortal.Api.IntegrationTests",
+        "tests/SupportPortal.ContractTests",
+        "tests/SupportPortal.UI.Tests",
+        "specs/003-global-admin-settings/contracts/global-admin-settings-api.yaml"
+      ]
+    }
+  }
+}

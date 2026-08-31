@@ -7,6 +7,7 @@ using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Domain.Teams;
 using SupportPortal.Domain.Notifications;
+using SupportPortal.Domain.Settings;
 
 namespace SupportPortal.Infrastructure.Persistence;
 
@@ -69,6 +70,13 @@ public sealed class EfPortalStore(SupportPortalDbContext dbContext) : IPortalSto
         .OrderBy(attempt => attempt.AttemptNumber)
         .ToArray();
 
+    public DeploymentSettings? GetDeploymentSettings() => dbContext.DeploymentSettings.SingleOrDefault();
+
+    public IReadOnlyList<DeploymentSettingsRecipient> GetDeploymentSettingsRecipients(Guid deploymentSettingsId) => dbContext.DeploymentSettingsRecipients
+        .Where(item => item.DeploymentSettingsId == deploymentSettingsId)
+        .OrderBy(item => item.NormalizedAddress)
+        .ToArray();
+
     public IReadOnlyList<NotificationDelivery> GetDueNotificationDeliveries(DateTimeOffset now, int maximumCount) => dbContext.NotificationDeliveries
         .Where(delivery =>
             (delivery.State == NotificationDeliveryState.Pending || delivery.State == NotificationDeliveryState.RetryableFailure) &&
@@ -123,6 +131,18 @@ public sealed class EfPortalStore(SupportPortalDbContext dbContext) : IPortalSto
     public void AddNotificationDelivery(NotificationDelivery delivery) => dbContext.NotificationDeliveries.Add(delivery);
 
     public void AddNotificationAttempt(NotificationAttempt attempt) => dbContext.NotificationAttempts.Add(attempt);
+
+    public void AddDeploymentSettings(DeploymentSettings settings) => dbContext.DeploymentSettings.Add(settings);
+
+    public void AddDeploymentSettingsRecipient(DeploymentSettingsRecipient recipient) => dbContext.DeploymentSettingsRecipients.Add(recipient);
+
+    public void RemoveDeploymentSettingsRecipients(Guid deploymentSettingsId)
+    {
+        var recipients = dbContext.DeploymentSettingsRecipients
+            .Where(item => item.DeploymentSettingsId == deploymentSettingsId)
+            .ToArray();
+        dbContext.DeploymentSettingsRecipients.RemoveRange(recipients);
+    }
 
     public void Execute(Action action)
     {

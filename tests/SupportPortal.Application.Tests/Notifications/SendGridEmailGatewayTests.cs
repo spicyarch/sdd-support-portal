@@ -2,7 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using SupportPortal.Application.Branding;
 using SupportPortal.Application.Notifications;
+using SupportPortal.Application.Settings;
+using SupportPortal.Domain.Settings;
 using SupportPortal.Infrastructure.Configuration;
 using SupportPortal.Infrastructure.Email;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,6 +89,200 @@ public sealed class SendGridEmailGatewayTests
         Assert.DoesNotContain("provider details", result.FailureCategory, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task CurrentRuntimeSnapshotControlsReadinessOverStartupOptions()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var snapshot = new EffectiveSettingsSnapshot(
+            "saved-revision",
+            SettingsSource.AdministratorOverride,
+            new EffectiveBrandProfile(
+                "Support Portal",
+                "SP",
+                "SP",
+                null,
+                null,
+                "#135E96",
+                "#006B54",
+                "#006B54",
+                "Support Operations",
+                "support@example.test",
+                null,
+                "saved-revision"),
+            "https://portal.example.test/invitations/accept",
+            72,
+            new EffectiveSendGridSettings(
+                false,
+                null,
+                "Support Portal",
+                "sender@example.test",
+                "support@example.test",
+                ["support@example.test"],
+                "https://portal.example.test",
+                15,
+                4,
+                5,
+                60,
+                "Global",
+                25,
+                60),
+            new RuntimeEmailAvailability(RuntimeEmailAvailabilityState.Disabled, [], now),
+            false,
+            SettingsApiKeyMode.Cleared,
+            now);
+        var state = new RuntimeSettingsState(snapshot);
+        using var provider = new ServiceCollection().BuildServiceProvider();
+        var gateway = new SendGridEmailGateway(
+            provider,
+            ValidOptions(),
+            new EmailDeliveryAvailability(EmailDeliveryState.Ready, [], now),
+            state);
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Sandbox, null, false),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(EmailReadinessOutcome.Disabled, result.Outcome);
+        Assert.Equal("NoProviderRequestMade", result.DeliveryMeaning);
+    }
+
+    [Fact]
+    public async Task DisabledReadinessDoesNotCallTheProvider()
+    {
+        using var httpResponse = new HttpResponseMessage(HttpStatusCode.OK);
+        var fakeClient = new FakeSendGridClient(new Response(HttpStatusCode.OK, new StringContent(string.Empty), httpResponse.Headers));
+        using var provider = new ServiceCollection().AddSingleton<ISendGridClient>(fakeClient).BuildServiceProvider();
+        var options = ValidOptions();
+        options.Enabled = false;
+        var gateway = new SendGridEmailGateway(
+            provider,
+            options,
+            new EmailDeliveryAvailability(EmailDeliveryState.Disabled, [], DateTimeOffset.UtcNow));
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Sandbox, null, false),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(EmailReadinessOutcome.Disabled, result.Outcome);
+        Assert.Equal("NoProviderRequestMade", result.DeliveryMeaning);
+        Assert.Equal(0, fakeClient.SendEmailCalls);
+    }
+
+    [Fact]
+    public async Task InvalidConfigurationDoesNotCallTheProvider()
+    {
+        using var httpResponse = new HttpResponseMessage(HttpStatusCode.OK);
+        var fakeClient = new FakeSendGridClient(new Response(HttpStatusCode.OK, new StringContent(string.Empty), httpResponse.Headers));
+        using var provider = new ServiceCollection().AddSingleton<ISendGridClient>(fakeClient).BuildServiceProvider();
+        var gateway = new SendGridEmailGateway(
+            provider,
+            ValidOptions(),
+            new EmailDeliveryAvailability(EmailDeliveryState.InvalidConfiguration, ["SendGrid:ApiKey"], DateTimeOffset.UtcNow));
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Sandbox, null, false),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(EmailReadinessOutcome.InvalidConfiguration, result.Outcome);
+        Assert.Equal("NoProviderRequestMade", result.DeliveryMeaning);
+        Assert.Equal(["SendGrid:ApiKey"], result.InvalidSettingNames);
+        Assert.Equal(0, fakeClient.SendEmailCalls);
+    }
+
+    [Fact]
+    public async Task Sandbox200MeansReadyWithoutEmailDelivery()
+    {
+        using var httpResponse = new HttpResponseMessage(HttpStatusCode.OK);
+        var fakeClient = new FakeSendGridClient(new Response(HttpStatusCode.OK, new StringContent("provider-body-secret"), httpResponse.Headers));
+        using var provider = new ServiceCollection().AddSingleton<ISendGridClient>(fakeClient).BuildServiceProvider();
+        var gateway = new SendGridEmailGateway(
+            provider,
+            ValidOptions(),
+            new EmailDeliveryAvailability(EmailDeliveryState.Ready, [], DateTimeOffset.UtcNow));
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Sandbox, null, false),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(EmailReadinessOutcome.Ready, result.Outcome);
+        Assert.Equal(200, result.ProviderHttpStatus);
+        Assert.Equal("NoEmailSent", result.DeliveryMeaning);
+        Assert.DoesNotContain("provider-body-secret", result.FailureCategory, StringComparison.Ordinal);
+        Assert.Equal(1, fakeClient.SendEmailCalls);
+    }
+
+    [Fact]
+    public async Task Live202MeansAcceptedButMailboxDeliveryIsUnconfirmed()
+    {
+        using var httpResponse = new HttpResponseMessage(HttpStatusCode.Accepted);
+        var fakeClient = new FakeSendGridClient(new Response(HttpStatusCode.Accepted, new StringContent(string.Empty), httpResponse.Headers));
+        using var provider = new ServiceCollection().AddSingleton<ISendGridClient>(fakeClient).BuildServiceProvider();
+        var gateway = new SendGridEmailGateway(
+            provider,
+            ValidOptions(),
+            new EmailDeliveryAvailability(EmailDeliveryState.Ready, [], DateTimeOffset.UtcNow));
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Live, "operator@example.test", true),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(EmailReadinessOutcome.Accepted, result.Outcome);
+        Assert.Equal(202, result.ProviderHttpStatus);
+        Assert.Equal("AcceptedBySendGridMailboxDeliveryUnconfirmed", result.DeliveryMeaning);
+        Assert.Equal(1, fakeClient.SendEmailCalls);
+    }
+
+    [Theory]
+    [InlineData(400, EmailReadinessOutcome.ProviderRejected, "RequestRejected")]
+    [InlineData(503, EmailReadinessOutcome.ProviderUnavailable, "ProviderFailure")]
+    public async Task ProviderStatusesMapToSafeReadinessOutcomes(int statusCode, EmailReadinessOutcome expectedOutcome, string expectedCategory)
+    {
+        using var httpResponse = new HttpResponseMessage((HttpStatusCode)statusCode);
+        var fakeClient = new FakeSendGridClient(new Response((HttpStatusCode)statusCode, new StringContent("provider-body-secret"), httpResponse.Headers));
+        using var provider = new ServiceCollection().AddSingleton<ISendGridClient>(fakeClient).BuildServiceProvider();
+        var gateway = new SendGridEmailGateway(
+            provider,
+            ValidOptions(),
+            new EmailDeliveryAvailability(EmailDeliveryState.Ready, [], DateTimeOffset.UtcNow));
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Live, "operator@example.test", true),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(expectedOutcome, result.Outcome);
+        Assert.Equal(statusCode, result.ProviderHttpStatus);
+        Assert.Equal(expectedCategory, result.FailureCategory);
+        Assert.Equal("NoEmailSent", result.DeliveryMeaning);
+        Assert.Equal(1, fakeClient.SendEmailCalls);
+    }
+
+    [Fact]
+    public async Task NetworkFailureMapsToProviderUnavailableWithoutProviderBody()
+    {
+        using var provider = new ServiceCollection()
+            .AddSingleton<ISendGridClient>(new FakeSendGridClient(exception: new HttpRequestException("provider-body-secret")))
+            .BuildServiceProvider();
+        var gateway = new SendGridEmailGateway(
+            provider,
+            ValidOptions(),
+            new EmailDeliveryAvailability(EmailDeliveryState.Ready, [], DateTimeOffset.UtcNow));
+
+        var result = await gateway.CheckAsync(
+            new EmailReadinessRequest(EmailReadinessMode.Sandbox, null, false),
+            "correlation",
+            CancellationToken.None);
+
+        Assert.Equal(EmailReadinessOutcome.ProviderUnavailable, result.Outcome);
+        Assert.Equal("NetworkUnavailable", result.FailureCategory);
+        Assert.DoesNotContain("provider-body-secret", result.FailureCategory, StringComparison.Ordinal);
+    }
+
     private static EmailDeliveryRequest CreateRequest() => new(
         Guid.NewGuid(),
         "recipient@example.test",
@@ -122,6 +319,8 @@ public sealed class SendGridEmailGatewayTests
 
         public SendGridMessage? Message { get; private set; }
 
+        public int SendEmailCalls { get; private set; }
+
         public string UrlPath { get; set; } = string.Empty;
 
         public string Version { get; set; } = "v3";
@@ -139,6 +338,7 @@ public sealed class SendGridEmailGatewayTests
 
         public Task<Response> SendEmailAsync(SendGridMessage message, CancellationToken cancellationToken = default)
         {
+            SendEmailCalls++;
             if (exception is not null)
             {
                 throw exception;

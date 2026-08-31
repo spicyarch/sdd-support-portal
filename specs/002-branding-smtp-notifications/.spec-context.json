@@ -1,0 +1,18 @@
+{
+  "workflow": "companion",
+  "specName": "002-branding-smtp-notifications",
+  "branch": "002-branding-smtp-notifications",
+  "selectedAt": "2026-08-30T23:48:06.779Z",
+  "currentStep": "specify",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-30T23:54:04.574Z"
+    }
+  ],
+  "telemetryInstanceId": "44b47030-2bcf-429e-b8ad-44408d854e7f"
+}

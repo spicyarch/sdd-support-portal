@@ -6,6 +6,8 @@ public sealed class AzureOptions
 
     public string? KeyVaultUri { get; set; }
 
+    public string SendGridApiKeySecretName { get; set; } = "support-portal-sendgrid-api-key";
+
     public string? ApplicationInsightsConnectionString { get; set; }
 
     public string AuthenticationMode { get; set; } = "Development";

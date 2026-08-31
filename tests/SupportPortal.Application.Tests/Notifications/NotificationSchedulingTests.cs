@@ -2,9 +2,11 @@ using SupportPortal.Application;
 using SupportPortal.Application.Authorization;
 using SupportPortal.Application.Branding;
 using SupportPortal.Application.Notifications;
+using SupportPortal.Application.Settings;
 using SupportPortal.Contracts.Requests;
 using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.Notifications;
+using SupportPortal.Domain.Settings;
 using SupportPortal.Infrastructure.Persistence;
 
 namespace SupportPortal.Application.Tests.Notifications;
@@ -89,10 +91,86 @@ public sealed class NotificationSchedulingTests
         Assert.DoesNotContain(candidates, item => item.UserId == DevelopmentIdentities.All.Single(identity => identity.Key == "global-support").UserId);
     }
 
+    [Fact]
+    public void RuntimeDisableStopsNewNotificationSchedulingUntilReenabled()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var store = new InMemoryPortalStore();
+        var runtime = new RuntimeSettingsState(CreateRuntimeSnapshot(enabled: false, now));
+        var scheduler = new NotificationScheduler(store, runtime);
+        var service = new SupportPortalService(store, TimeProvider.System, notificationScheduler: scheduler);
+
+        service.CreateRequest(
+            Principal("team-user-a"),
+            Guid.NewGuid(),
+            new CreateSupportRequestRequest("Disabled delivery", "Normal", "Description"));
+
+        Assert.Empty(store.GetNotifications());
+
+        runtime.Publish(CreateRuntimeSnapshot(enabled: true, now), now);
+        service.CreateRequest(
+            Principal("team-user-a"),
+            Guid.NewGuid(),
+            new CreateSupportRequestRequest("Enabled delivery", "Normal", "Description"));
+
+        Assert.Single(store.GetNotifications());
+
+        runtime.Publish(CreateRuntimeSnapshot(enabled: false, now), now);
+        service.CreateRequest(
+            Principal("team-user-a"),
+            Guid.NewGuid(),
+            new CreateSupportRequestRequest("Disabled again", "Normal", "Description"));
+
+        Assert.Single(store.GetNotifications());
+    }
+
     private static PortalPrincipal Principal(string key)
     {
         var identity = DevelopmentIdentities.All.Single(item => item.Key == key);
         return new PortalPrincipal(identity.UserId, DevelopmentIdentities.TenantId, identity.ObjectId, identity.DisplayName, identity.Role, identity.TeamId, true);
+    }
+
+    private static EffectiveSettingsSnapshot CreateRuntimeSnapshot(bool enabled, DateTimeOffset loadedAt)
+    {
+        var brand = BrandingResolver.Resolve(new BrandingInput(
+            "Support Portal",
+            "SP",
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Support",
+            "support@example.test",
+            null), "Development");
+        return new EffectiveSettingsSnapshot(
+            enabled ? "enabled-revision" : "disabled-revision",
+            SettingsSource.AdministratorOverride,
+            brand,
+            "http://localhost:5258/invitations/accept",
+            72,
+            new EffectiveSendGridSettings(
+                enabled,
+                enabled ? "runtime-key" : null,
+                "Support Portal",
+                "sender@example.test",
+                "support@example.test",
+                ["global-support@example.test"],
+                "http://localhost:5258",
+                15,
+                4,
+                5,
+                60,
+                "Global",
+                25,
+                60),
+            new RuntimeEmailAvailability(
+                enabled ? RuntimeEmailAvailabilityState.Ready : RuntimeEmailAvailabilityState.Disabled,
+                [],
+                loadedAt),
+            enabled,
+            enabled ? SettingsApiKeyMode.Managed : SettingsApiKeyMode.Cleared,
+            loadedAt);
     }
 
     private sealed class FakeEmailDeliveryGateway : SupportPortal.Application.Abstractions.IEmailDeliveryGateway

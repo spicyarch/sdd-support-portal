@@ -4,6 +4,23 @@ Use this procedure to configure one deployment-wide brand and outbound email thr
 SendGrid Web API. The portal does not provide a branding editor, per-team branding, custom domains,
 or user notification preferences.
 
+## Settings Page Workflow
+
+After the API and client are deployed, an active Global Administrator should use `/settings` for
+runtime-safe deployment business settings. The page groups Branding, invitation acceptance, and
+SendGrid delivery values, shows effective values and activation state, and saves one complete
+validated profile atomically.
+
+Successful saves activate on the saving process immediately. Other running processes poll the shared
+settings revision every 30 seconds, so a valid revision converges across the deployment within the
+60-second activation target without a restart. During a failed refresh, the prior valid snapshot
+remains active and the page reports the desired revision, safe failure category, and retry state.
+
+The page does not replace host-owned controls. Keep Entra tenant and audience validation, CORS and
+allowed origins, SQL connection settings, Key Vault identity and URI, Function authentication,
+invitation signing key, and other infrastructure secrets in host configuration. An absent settings
+row continues to use host configuration and built-in defaults.
+
 ## Safety Rules
 
 - SendGrid delivery is disabled unless `SendGrid:Enabled` is explicitly `true` and all required
@@ -20,8 +37,9 @@ or user notification preferences.
 
 ## Branding Settings
 
-Set these values under the `Branding` configuration section. Values are resolved at application
-startup; restart the API and client hosts after changing them.
+The `/settings` page is the preferred operator surface for these values. Host configuration remains
+the fallback baseline when no administrator override exists and is useful for first deployment
+bootstrap.
 
 | Setting | Required | Description |
 |---------|----------|-------------|
@@ -39,11 +57,14 @@ startup; restart the API and client hosts after changing them.
 The API resolves each field independently. Required portal controls always use an accessible
 effective color. A missing or unavailable image becomes text or generated initials without changing
 the reserved navigation dimensions. The anonymous `GET /api/v1/branding` operation returns effective
-public values only.
+public values only. A successful settings save refreshes the effective brand without a full-page
+navigation.
 
 ## SendGrid Settings
 
-Set these values under `SendGrid`. The API key is the only secret.
+Edit these values in the SendGrid section of `/settings`. The API key is the only secret and is
+write-only; the page never repopulates it from a response. The host `SendGrid` configuration remains
+the fallback baseline when no administrator override exists.
 
 | Setting | Required when enabled | Description |
 |---------|-----------------------|-------------|
@@ -84,9 +105,9 @@ the placeholder in a checked-in file:
 dotnet user-secrets set 'SendGrid:ApiKey' '<sendgrid-api-key>' --project .\src\SupportPortal.Api\SupportPortal.Api.csproj
 ```
 
-Set the other non-secret values through the untracked local settings or the current PowerShell
-session. Use the complete example in [quickstart.md](../../specs/002-branding-smtp-notifications/quickstart.md).
-Start the API and client with the commands in [run-and-test-locally-windows.md](../tutorials/run-and-test-locally-windows.md).
+Set the other non-secret values through the settings page after starting the API and client. Use the
+complete example in [quickstart.md](../../specs/003-global-admin-settings/quickstart.md). Start the
+API and client with the commands in [run-and-test-locally-windows.md](../tutorials/run-and-test-locally-windows.md).
 
 ## SendGrid Account Preparation
 
@@ -120,7 +141,7 @@ only by a Development API and must never be used in Azure.
 | Symptom | Safe check |
 |---------|------------|
 | Readiness reports `InvalidConfiguration` | Review only the returned setting names; do not print configuration values. |
-| Readiness reports `AuthenticationRejected` | Rotate/revoke the key through SendGrid, restore the `mail.send` scope, restart, and rerun sandbox readiness. |
+| Readiness reports `AuthenticationRejected` | Rotate/revoke the key through SendGrid, restore the `mail.send` scope, save the replacement in `/settings`, and rerun sandbox readiness. |
 | Readiness reports `PermissionOrSenderRejected` | Confirm sender/domain authentication, account/subuser region, and sender address. |
 | Delivery is `RetryableFailure` | Review safe category, status, attempt count, and next-attempt timing; do not log provider bodies. |
 | Delivery is `PermanentFailure` | Correct configuration or sender setup, then use the approved re-enable/reprocessing procedure. |
@@ -133,8 +154,10 @@ reply body, or provider error body into logs or support tickets.
 ## Rotate the API Key
 
 1. Create a replacement restricted key with `mail.send` only.
-2. Update the local user secret or Key Vault-backed `SendGrid__ApiKey` setting.
-3. Restart the API instances so the SendGrid client uses the replacement secret.
+2. Open `/settings`, paste the replacement once into the write-only API-key field, and save the
+  complete valid profile. Protected storage is staged before the settings revision commits.
+3. Confirm the page reports the new revision and a safe Ready/Invalid Configuration state. Other
+  instances converge through revision polling without a restart.
 4. Run sandbox readiness and an explicitly approved live test.
 5. Revoke the previous SendGrid key.
 
@@ -144,10 +167,11 @@ or deliberately revoke and reissue them through the approved maintenance procedu
 
 ## Disable Delivery Safely
 
-1. Set `SendGrid:Enabled=false` and restart every API/worker instance.
-2. Confirm readiness reports `Disabled` and no provider attempts occur.
+1. Set SendGrid to disabled in `/settings` and save the complete profile.
+2. Confirm readiness reports `Disabled` and no provider attempts occur. Other instances converge
+  within 60 seconds without a restart.
 3. Keep pending and retryable delivery rows. Disabling does not delete requests, replies,
    invitations, audit records, receipts, or notification state.
-4. Before re-enabling, correct configuration/sender issues, run readiness, and obtain approval for
-   resuming old work.
+4. Before re-enabling, correct configuration/sender issues, save valid settings, run readiness, and
+  obtain approval for resuming old work.
 5. Never delete notification rows or roll back the additive migration by deleting business history.

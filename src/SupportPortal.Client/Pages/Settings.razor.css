@@ -1,0 +1,207 @@
+#settings-page {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.settings-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--line, #d8d4cc);
+    background: var(--paper, #fffdf8);
+    color: var(--ink, #202522);
+}
+
+.settings-status div {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.settings-status span,
+.settings-help,
+.field-note {
+    color: var(--muted, #626b66);
+    font-size: 0.9rem;
+}
+
+.settings-layout {
+    display: grid;
+    gap: 1rem;
+}
+
+.settings-panel {
+    min-inline-size: 0;
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--line, #d8d4cc);
+    background: var(--paper, #fffdf8);
+}
+
+.settings-panel-wide {
+    grid-column: 1 / -1;
+}
+
+.settings-panel legend {
+    padding: 0 0.35rem;
+    color: var(--ink, #202522);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.settings-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.settings-fields label {
+    display: grid;
+    gap: 0.4rem;
+    min-inline-size: 0;
+    color: var(--ink, #202522);
+    font-weight: 600;
+}
+
+.settings-fields label:has(textarea),
+.settings-fields label.settings-toggle {
+    grid-column: 1 / -1;
+}
+
+.settings-fields input,
+.settings-fields textarea,
+.settings-fields select {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: 2.65rem;
+    border: 1px solid var(--line-strong, #aba79f);
+    border-radius: 0.25rem;
+    padding: 0.65rem 0.75rem;
+    background: #ffffff;
+    color: var(--ink, #202522);
+    font: inherit;
+}
+
+.settings-fields textarea {
+    resize: vertical;
+}
+
+.settings-fields input:focus,
+.settings-fields textarea:focus,
+.settings-fields select:focus,
+.settings-actions button:focus,
+#settings-conflict button:focus {
+    outline: 3px solid var(--brand-focus, #006b54);
+    outline-offset: 2px;
+}
+
+.settings-toggle {
+    display: flex !important;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.65rem !important;
+}
+
+.settings-toggle input {
+    inline-size: 1.15rem;
+    min-block-size: 1.15rem;
+}
+
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.settings-actions button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.readiness-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.readiness-controls label {
+    display: grid;
+    gap: 0.4rem;
+    min-inline-size: 0;
+    color: var(--ink, #202522);
+    font-weight: 600;
+}
+
+.readiness-controls input,
+.readiness-controls select {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: 2.65rem;
+    border: 1px solid var(--line-strong, #aba79f);
+    border-radius: 0.25rem;
+    padding: 0.65rem 0.75rem;
+    background: #ffffff;
+    color: var(--ink, #202522);
+    font: inherit;
+}
+
+.readiness-controls input:focus,
+.readiness-controls select:focus,
+.readiness-actions button:focus,
+.readiness-result:focus {
+    outline: 3px solid var(--brand-focus, #006b54);
+    outline-offset: 2px;
+}
+
+.readiness-controls .settings-toggle {
+    grid-column: 1 / -1;
+}
+
+.readiness-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.readiness-result {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem;
+    border: 1px solid var(--line, #d8d4cc);
+    background: #ffffff;
+    color: var(--ink, #202522);
+}
+
+.readiness-result:focus {
+    outline-offset: 3px;
+}
+
+#settings-validation-summary {
+    outline: none;
+}
+
+#settings-validation-summary ul {
+    margin: 0.5rem 0 0;
+    padding-inline-start: 1.25rem;
+}
+
+@media (max-width: 700px) {
+    .settings-status,
+    .settings-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .settings-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .readiness-controls {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-panel {
+        padding: 1rem;
+    }
+}

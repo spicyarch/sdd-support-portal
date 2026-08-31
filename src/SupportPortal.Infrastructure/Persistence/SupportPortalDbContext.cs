@@ -5,6 +5,8 @@ using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Domain.Teams;
 using SupportPortal.Domain.Notifications;
+using SupportPortal.Domain.Settings;
+using SupportPortal.Infrastructure.Persistence.Configurations;
 
 namespace SupportPortal.Infrastructure.Persistence;
 
@@ -32,6 +34,10 @@ public sealed class SupportPortalDbContext(DbContextOptions<SupportPortalDbConte
 
     public DbSet<NotificationAttempt> NotificationAttempts => Set<NotificationAttempt>();
 
+    public DbSet<DeploymentSettings> DeploymentSettings => Set<DeploymentSettings>();
+
+    public DbSet<DeploymentSettingsRecipient> DeploymentSettingsRecipients => Set<DeploymentSettingsRecipient>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<DateTimeOffset>().HaveConversion<UtcDateTimeOffsetConverter>();
@@ -40,6 +46,9 @@ public sealed class SupportPortalDbContext(DbContextOptions<SupportPortalDbConte
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new DeploymentSettingsConfiguration());
+        modelBuilder.ApplyConfiguration(new DeploymentSettingsRecipientConfiguration());
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(item => item.UserId);

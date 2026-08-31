@@ -22,6 +22,7 @@ public static class ManagedIdentityRegistration
         {
             SqlConnection = configuration["Portal:SqlConnection"],
             KeyVaultUri = configuration["Portal:KeyVaultUri"],
+            SendGridApiKeySecretName = configuration["Portal:SendGridApiKeySecretName"] ?? "support-portal-sendgrid-api-key",
             ApplicationInsightsConnectionString = configuration["ApplicationInsights:ConnectionString"],
             AuthenticationMode = configuration["Portal:AuthenticationMode"] ?? "Development",
             DevelopmentIdentitiesEnabled = bool.TryParse(configuration["Portal:DevelopmentIdentitiesEnabled"], out var enabled) && enabled,

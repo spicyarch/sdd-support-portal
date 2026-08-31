@@ -3,6 +3,7 @@ using SupportPortal.Application.Authorization;
 using SupportPortal.Application.Common;
 using SupportPortal.Application.Notifications;
 using SupportPortal.Domain.Authorization;
+using SupportPortal.Infrastructure.Persistence;
 using AppEmailReadinessRequest = SupportPortal.Application.Notifications.EmailReadinessRequest;
 using AppEmailReadinessResult = SupportPortal.Application.Notifications.EmailReadinessResult;
 using ContractEmailReadinessRequest = SupportPortal.Contracts.Operations.EmailReadinessRequest;
@@ -56,6 +57,46 @@ public sealed class EmailReadinessServiceTests
         Assert.Equal(EmailReadinessMode.Sandbox, gateway.Requests.Single().Mode);
         Assert.Null(gateway.Requests.Single().TestRecipient);
         Assert.Equal("correlation", result.CorrelationId);
+    }
+
+    [Fact]
+    public async Task RecheckRejectsAnAdministratorDeactivatedDuringRefresh()
+    {
+        var store = new InMemoryPortalStore();
+        var user = store.GetUser(DevelopmentIdentities.All.Single(item => item.Key == "global-admin").UserId)!;
+        user.Deactivate(DateTimeOffset.UtcNow);
+        var gateway = new FakeReadinessGateway();
+        var service = new EmailReadinessService(gateway, store: store);
+
+        var exception = await Assert.ThrowsAsync<PortalServiceException>(() => service.CheckAsync(
+            Principal("global-admin"),
+            new ContractEmailReadinessRequest("Sandbox"),
+            "correlation",
+            CancellationToken.None));
+
+        Assert.Equal(403, exception.StatusCode);
+        Assert.Empty(gateway.Requests);
+    }
+
+    [Fact]
+    public async Task SuccessfulReadinessCheckRecordsOnlySafeAuditMetadata()
+    {
+        var store = new InMemoryPortalStore();
+        var gateway = new FakeReadinessGateway();
+        var service = new EmailReadinessService(gateway, store: store);
+
+        await service.CheckAsync(
+            Principal("global-admin"),
+            new ContractEmailReadinessRequest("Sandbox"),
+            "correlation",
+            CancellationToken.None);
+
+        var audit = Assert.Single(store.GetAuditEvents(), item => item.EventType == "EmailReadinessChecked");
+        Assert.True(audit.Succeeded);
+        Assert.Contains("Sandbox", audit.Metadata, StringComparison.Ordinal);
+        Assert.Contains("NoEmailSent", audit.Metadata, StringComparison.Ordinal);
+        Assert.DoesNotContain("recipient", audit.Metadata, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("token", audit.Metadata, StringComparison.OrdinalIgnoreCase);
     }
 
     private static PortalPrincipal Principal(string key)

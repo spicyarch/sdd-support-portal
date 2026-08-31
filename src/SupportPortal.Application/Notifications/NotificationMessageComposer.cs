@@ -1,6 +1,7 @@
 using SupportPortal.Application.Abstractions;
 using SupportPortal.Application.Authorization;
 using SupportPortal.Application.Branding;
+using SupportPortal.Application.Settings;
 using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.Notifications;
 
@@ -12,24 +13,37 @@ public sealed class NotificationMessageComposer
     private readonly BrandedEmailRenderer renderer;
     private readonly AuthorizedPortalLinkBuilder links;
     private readonly IInvitationTokenService invitationTokens;
+    private readonly RuntimeSettingsState? runtimeSettings;
+    private readonly EffectiveBrandProfile? configuredBrand;
+    private readonly string? configuredPublicPortalUrl;
 
     public NotificationMessageComposer(
         IPortalStore store,
         EffectiveBrandProfile brand,
         string publicPortalUrl,
-        IInvitationTokenService invitationTokens)
+        IInvitationTokenService invitationTokens,
+        RuntimeSettingsState? runtimeSettings = null)
     {
         this.store = store;
+        configuredBrand = brand;
+        configuredPublicPortalUrl = publicPortalUrl;
         renderer = new BrandedEmailRenderer(brand);
         links = new AuthorizedPortalLinkBuilder(publicPortalUrl);
         this.invitationTokens = invitationTokens;
+        this.runtimeSettings = runtimeSettings;
     }
 
     public EmailDeliveryRequest Compose(Notification notification, NotificationRecipientCandidate recipient, bool sandboxMode = false)
     {
+        var currentRenderer = runtimeSettings is null
+            ? renderer
+            : new BrandedEmailRenderer(runtimeSettings.Current.Branding);
+        var currentLinks = runtimeSettings is null
+            ? links
+            : new AuthorizedPortalLinkBuilder(runtimeSettings.Current.SendGrid.PublicPortalUrl ?? configuredPublicPortalUrl!);
         var (recipientAddress, recipientDisplayName, content) = notification.EventType == NotificationEventType.InvitationCreated
-            ? ComposeInvitation(notification)
-            : ComposeRequestActivity(notification);
+            ? ComposeInvitation(notification, currentRenderer, currentLinks)
+            : ComposeRequestActivity(notification, currentRenderer, currentLinks);
         if (recipient.Kind == NotificationRecipientKind.ConfiguredGlobalMailbox)
         {
             recipientAddress = recipient.Address ?? throw new InvalidOperationException("Configured notification address is missing.");
@@ -54,7 +68,10 @@ public sealed class NotificationMessageComposer
             sandboxMode);
     }
 
-    private (string Address, string? DisplayName, BrandedEmailContent Content) ComposeRequestActivity(Notification notification)
+    private (string Address, string? DisplayName, BrandedEmailContent Content) ComposeRequestActivity(
+        Notification notification,
+        BrandedEmailRenderer currentRenderer,
+        AuthorizedPortalLinkBuilder currentLinks)
     {
         if (notification.SupportRequestId is not Guid requestId || store.GetRequest(requestId) is not { } request)
         {
@@ -62,17 +79,20 @@ public sealed class NotificationMessageComposer
         }
 
         var author = store.GetUser(notification.ActorUserId)?.DisplayName ?? "Portal user";
-        var content = renderer.RenderRequestActivity(
+        var content = currentRenderer.RenderRequestActivity(
             GetEventLabel(notification.EventType),
             request.Reference,
             request.Subject,
             author,
             request.Status.ToString(),
-            links.CreateRequestLink(request.SupportRequestId));
+            currentLinks.CreateRequestLink(request.SupportRequestId));
         return (string.Empty, null, content);
     }
 
-    private (string Address, string? DisplayName, BrandedEmailContent Content) ComposeInvitation(Notification notification)
+    private (string Address, string? DisplayName, BrandedEmailContent Content) ComposeInvitation(
+        Notification notification,
+        BrandedEmailRenderer currentRenderer,
+        AuthorizedPortalLinkBuilder currentLinks)
     {
         if (notification.InvitationId is not Guid invitationId || store.GetInvitation(invitationId) is not { } invitation)
         {
@@ -80,7 +100,10 @@ public sealed class NotificationMessageComposer
         }
 
         var token = invitationTokens.CreateToken(invitation.InvitationId);
-        var content = renderer.RenderInvitation(links.CreateInvitationLink(token));
+        var acceptanceLink = runtimeSettings is null
+            ? currentLinks.CreateInvitationLink(token)
+            : invitationTokens.CreateAcceptanceLink(token);
+        var content = currentRenderer.RenderInvitation(acceptanceLink);
         return (invitation.Email, null, content);
     }
 

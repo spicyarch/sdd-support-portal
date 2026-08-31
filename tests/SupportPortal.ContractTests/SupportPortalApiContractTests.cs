@@ -54,4 +54,22 @@ public sealed class SupportPortalApiContractTests
         Assert.DoesNotContain("recipientAddress", contract, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apiKey:", contract, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void GlobalSettingsContractExposesRedactedAdministratorOperations()
+    {
+        var contract = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "global-admin-settings-api.yaml"));
+
+        Assert.Contains("/settings:", contract);
+        Assert.Contains("getGlobalAdministratorSettings", contract);
+        Assert.Contains("replaceGlobalAdministratorSettings", contract);
+        Assert.Contains("Global Administrator", contract);
+        Assert.Contains("If-Match", contract);
+        Assert.Contains("Idempotency-Key", contract);
+        Assert.Contains("writeOnly: true", contract);
+        Assert.Contains("apiKeyConfigured", contract);
+        Assert.Contains("clearApiKey", contract);
+        Assert.Contains("ActivationFailed", contract);
+        Assert.DoesNotContain("secretVersion:", contract, StringComparison.OrdinalIgnoreCase);
+    }
 }

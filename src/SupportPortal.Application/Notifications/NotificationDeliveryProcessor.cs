@@ -1,6 +1,7 @@
 using System.Text.Json;
 using SupportPortal.Application.Abstractions;
 using SupportPortal.Application.Authorization;
+using SupportPortal.Application.Settings;
 using SupportPortal.Domain.Auditing;
 using SupportPortal.Domain.Notifications;
 
@@ -18,6 +19,7 @@ public sealed class NotificationDeliveryProcessor
     private readonly bool enabled;
     private readonly bool canSend;
     private readonly int batchSize;
+    private readonly RuntimeSettingsState? runtimeSettings;
 
     public NotificationDeliveryProcessor(
         IPortalStore store,
@@ -29,7 +31,8 @@ public sealed class NotificationDeliveryProcessor
         TimeSpan leaseDuration,
         bool enabled,
         bool canSend,
-        int batchSize)
+        int batchSize,
+        RuntimeSettingsState? runtimeSettings = null)
     {
         this.store = store;
         this.gateway = gateway;
@@ -41,11 +44,12 @@ public sealed class NotificationDeliveryProcessor
         this.enabled = enabled;
         this.canSend = canSend;
         this.batchSize = batchSize;
+        this.runtimeSettings = runtimeSettings;
     }
 
     public async Task<int> ProcessOnceAsync(CancellationToken cancellationToken = default)
     {
-        if (!enabled || !canSend)
+        if (!IsEnabled || !CanSend)
         {
             return 0;
         }
@@ -54,7 +58,7 @@ public sealed class NotificationDeliveryProcessor
         RecoverExpiredAttempts(now);
         ExpandPendingNotifications(now);
         var processed = 0;
-        foreach (var candidate in store.GetDueNotificationDeliveries(now, batchSize))
+        foreach (var candidate in store.GetDueNotificationDeliveries(now, BatchSize))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (await ProcessDeliveryAsync(candidate.NotificationDeliveryId, cancellationToken))
@@ -149,7 +153,7 @@ public sealed class NotificationDeliveryProcessor
         string owner,
         DateTimeOffset now)
     {
-        return store.TryStartNotificationAttempt(deliveryId, owner, now, leaseDuration);
+        return store.TryStartNotificationAttempt(deliveryId, owner, now, LeaseDuration);
     }
 
     private void RecoverExpiredAttempts(DateTimeOffset now)
@@ -306,4 +310,16 @@ public sealed class NotificationDeliveryProcessor
         Enum.TryParse<NotificationFailureCategory>(category, ignoreCase: true, out var parsed)
             ? parsed
             : NotificationFailureCategory.Unknown;
+
+    private bool IsEnabled => runtimeSettings?.Current.SendGrid.Enabled ?? enabled;
+
+    private bool CanSend => runtimeSettings?.Current.EmailAvailability.CanSend ?? canSend;
+
+    private int BatchSize => runtimeSettings?.Current.SendGrid.BatchSize is int configured
+        ? Math.Clamp(configured, 1, 100)
+        : batchSize;
+
+    private TimeSpan LeaseDuration => runtimeSettings?.Current.SendGrid.LeaseSeconds is int configured
+        ? TimeSpan.FromSeconds(Math.Clamp(configured, 30, 600))
+        : leaseDuration;
 }

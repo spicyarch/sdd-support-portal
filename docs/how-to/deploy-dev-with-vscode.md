@@ -16,6 +16,9 @@ dev acceptance is recorded, whichever comes first. Do not use it for test, stagi
 7. Confirm SendGrid is disabled unless the dev account, verified sender, restricted `mail.send` API
    key, secret-backed `SendGrid__ApiKey`, public portal URL, and additive notification migration are
    ready. Never use `Upload Local Settings` for the API key.
+8. Confirm the deployment-wide settings migration is applied and that the active Global Administrator
+   can reach `/settings`. Keep Entra, SQL, Key Vault, Function authentication, and invitation signing
+   configuration host-owned; use the page only for runtime-safe business settings.
 
 ## Function App
 
@@ -48,7 +51,10 @@ Repeat the scenarios in the feature quickstart against the dev URL. Verify 401 u
 requests, cross-team 404 isolation, role changes within 60 seconds, idempotent retries, five-second
 active-view updates, keyboard navigation, required viewport widths, effective branding, sandbox
 readiness, controlled live readiness only with approval, SendGrid failure recovery, and safe
-disablement.
+disablement. Save a non-secret settings revision and verify the saving instance activates immediately
+and a second instance observes it within 60 seconds. Confirm an interrupted refresh retains the
+last-known-good snapshot and that re-enabling valid SendGrid settings resumes pending work without
+duplicates.
 
 Record client and API artifact IDs, migration version, trace IDs, outcomes, and approver in the
 release notes and `CHANGELOG.md`.

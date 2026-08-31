@@ -1,0 +1,472 @@
+@page "/settings"
+@using SupportPortal.Contracts.Operations
+@using SupportPortal.Contracts.Settings
+@inject SupportPortalApiClient Api
+@inject DevelopmentIdentityState Identity
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+@inject BrandingState Branding
+
+<PageTitle>Settings | @Branding.Current.ProductName</PageTitle>
+
+@if (loading)
+{
+    <div class="loading-panel" role="status">Loading settings...</div>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <section id="settings-page" class="settings-page" aria-labelledby="settings-heading">
+        <div class="alert alert-error" role="alert">@error</div>
+    </section>
+}
+else
+{
+    <section id="settings-page" class="settings-page" aria-labelledby="settings-heading">
+        <div class="page-intro compact-intro">
+            <div>
+                <span class="eyebrow">Global administration</span>
+                <h1 id="settings-heading">Deployment settings</h1>
+                <p>Manage runtime-safe portal identity, invitations, and outbound email.</p>
+            </div>
+        </div>
+
+        <div id="settings-status" class="settings-status" role="status" aria-live="polite">
+            <div>
+                <strong>Email delivery: @settings!.EmailAvailability.State</strong>
+                <span>Source: @settings.Source · Revision: @settings.SettingsVersion</span>
+            </div>
+            <div id="settings-activation-status">
+                <span>Activation: @settings.Activation.State</span>
+                <span id="settings-active-revision">Active revision: @settings.Activation.ActiveVersion</span>
+                <span id="settings-desired-revision">Desired revision: @settings.Activation.DesiredVersion</span>
+                <span>Last refresh attempt: @(settings.Activation.LastAttemptAt?.ToString("u") ?? "Not attempted")</span>
+                <span>Last successful refresh: @(settings.Activation.LastSuccessfulAt?.ToString("u") ?? "Not available")</span>
+                <span>Retry: @settings.Activation.RetryState</span>
+                @if (!string.IsNullOrWhiteSpace(settings.Activation.FailureCategory))
+                {
+                    <span>Activation issue: @settings.Activation.FailureCategory</span>
+                }
+                @if (settings.EmailAvailability.InvalidSettingNames.Count > 0)
+                {
+                    <span>Invalid: @string.Join(", ", settings.EmailAvailability.InvalidSettingNames)</span>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(savedMessage))
+        {
+            <div class="alert alert-success" role="status">@savedMessage</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(conflictMessage))
+        {
+            <div id="settings-conflict" class="alert alert-error" role="alert">
+                <span>@conflictMessage</span>
+                <button class="button button-quiet" type="button" @onclick="ReloadAsync">Reload current settings</button>
+            </div>
+        }
+        @if (validationErrors.Count > 0)
+        {
+            <div id="settings-validation-summary" @ref="validationSummary" class="alert alert-error" role="alert" tabindex="-1">
+                <strong>Review these settings:</strong>
+                <ul>
+                    @foreach (var validationError in validationErrors)
+                    {
+                        <li>@validationError</li>
+                    }
+                </ul>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(activationError))
+        {
+            <div id="settings-activation-error" class="alert alert-error" role="alert">@activationError</div>
+        }
+        @if (clearConfirmationRequired)
+        {
+            <div id="sendgrid-clear-confirmation" class="alert alert-warning" role="alert">
+                <span>Clearing the SendGrid API key disables its use until a new protected key is configured.</span>
+                <button class="button button-primary" type="button" @onclick="ConfirmClearApiKey">Confirm clear</button>
+                <button class="button button-quiet" type="button" @onclick="CancelClearApiKey">Keep current key</button>
+            </div>
+        }
+
+        <EditForm id="settings-form" Model="draft" OnValidSubmit="SaveAsync">
+            <div class="settings-layout">
+                <fieldset id="branding-settings" class="settings-panel">
+                    <legend>Branding</legend>
+                    <p class="settings-help">The identity users see across this deployment.</p>
+                    <div class="settings-fields">
+                        <label>Product name<input id="branding-product-name" @bind="draft.ProductName" /></label>
+                        <label>Short product name<input id="branding-short-product-name" @bind="draft.ShortProductName" /></label>
+                        <label>Logo URL<input id="branding-logo-url" type="url" @bind="draft.LogoUrl" /></label>
+                        <label>Favicon URL<input id="branding-favicon-url" type="url" @bind="draft.FaviconUrl" /></label>
+                        <label>Primary color<input id="branding-primary-color" type="text" @bind="draft.PrimaryColor" /></label>
+                        <label>Accent color<input id="branding-accent-color" type="text" @bind="draft.AccentColor" /></label>
+                        <label>Focus color<input id="branding-focus-color" type="text" @bind="draft.FocusColor" /></label>
+                        <label>Support contact name<input id="branding-support-contact-name" @bind="draft.SupportContactName" /></label>
+                        <label>Support contact email<input id="branding-support-contact-email" type="email" @bind="draft.SupportContactEmail" /></label>
+                        <label>Organization name<input id="branding-organization-name" @bind="draft.OrganizationName" /></label>
+                    </div>
+                </fieldset>
+
+                <fieldset id="invitation-settings" class="settings-panel">
+                    <legend>Invitation behavior</legend>
+                    <p class="settings-help">Control where invitations open and how long they remain valid.</p>
+                    <div class="settings-fields">
+                        <label>Acceptance base URL<input id="invitation-acceptance-base-url" type="url" @bind="draft.InvitationAcceptanceBaseUrl" /></label>
+                        <label>Lifetime in hours<input id="invitation-lifetime-hours" type="number" min="1" max="168" @bind="draft.InvitationLifetimeHours" /></label>
+                    </div>
+                </fieldset>
+
+                <fieldset id="sendgrid-settings" class="settings-panel settings-panel-wide">
+                    <legend>SendGrid delivery</legend>
+                    <p class="settings-help">Email stays disabled until its complete configuration is valid.</p>
+                    <div class="settings-fields">
+                        <label class="settings-toggle"><input id="sendgrid-enabled" type="checkbox" @bind="draft.SendGridEnabled" /> Enable SendGrid delivery</label>
+                        <label>API key <span class="field-note">@(settings.SendGrid.ApiKeyConfigured ? "Configured" : "Not configured")</span><input id="sendgrid-api-key" type="password" autocomplete="new-password" @bind="draft.ApiKey" /></label>
+                        <label class="settings-toggle"><input id="sendgrid-clear-api-key" type="checkbox" @bind="draft.ClearApiKey" /> Clear the current API key</label>
+                        <label>Sender display name<input id="sendgrid-sender-display-name" @bind="draft.SenderDisplayName" /></label>
+                        <label>Sender address<input id="sendgrid-sender-address" type="email" @bind="draft.SenderAddress" /></label>
+                        <label>Reply-to address<input id="sendgrid-reply-to-address" type="email" @bind="draft.ReplyToAddress" /></label>
+                        <label>Global support recipients <span class="field-note">One address per line</span><textarea id="sendgrid-recipients" rows="4" @bind="draft.GlobalSupportRecipients"></textarea></label>
+                        <label>Public portal URL<input id="sendgrid-public-portal-url" type="url" @bind="draft.PublicPortalUrl" /></label>
+                        <label>HTTP timeout in seconds<input id="sendgrid-http-timeout" type="number" min="1" max="120" @bind="draft.HttpTimeoutSeconds" /></label>
+                        <label>Maximum attempts<input id="sendgrid-maximum-attempts" type="number" min="1" max="10" @bind="draft.MaximumAttempts" /></label>
+                        <label>Minimum backoff in seconds<input id="sendgrid-minimum-backoff" type="number" min="1" max="3600" @bind="draft.MinimumBackoffSeconds" /></label>
+                        <label>Maximum backoff in seconds<input id="sendgrid-maximum-backoff" type="number" min="1" max="86400" @bind="draft.MaximumBackoffSeconds" /></label>
+                        <label>Data residency<select id="sendgrid-data-residency" @bind="draft.DataResidency"><option value="Global">Global</option><option value="Eu">EU</option></select></label>
+                        <label>Batch size<input id="sendgrid-batch-size" type="number" min="1" max="100" @bind="draft.BatchSize" /></label>
+                        <label>Lease in seconds<input id="sendgrid-lease-seconds" type="number" min="30" max="600" @bind="draft.LeaseSeconds" /></label>
+                    </div>
+                </fieldset>
+
+                <section id="readiness-check" class="settings-panel settings-panel-wide" aria-labelledby="readiness-heading">
+                    <div class="section-heading"><div><span class="eyebrow">Operations</span><h2 id="readiness-heading">Email readiness</h2></div></div>
+                    <p class="settings-help">Save valid settings before running a sandbox or live provider check.</p>
+                    @if (settingsVersion == "host-defaults")
+                    {
+                        <p class="field-note">Save the deployment settings before running a readiness check.</p>
+                    }
+                    else
+                    {
+                        <div id="readiness-controls" class="readiness-controls">
+                            <label>Check mode<select id="readiness-mode" @bind="readinessMode"><option value="Sandbox">Sandbox</option><option value="Live">Live</option></select></label>
+                            @if (readinessMode == "Live")
+                            {
+                                <label>Test recipient<input id="readiness-test-recipient" type="email" autocomplete="off" @bind="readinessRecipient" /></label>
+                                <label class="settings-toggle"><input id="readiness-confirm-live" type="checkbox" @bind="confirmLiveSend" /> I confirm this sends a live email</label>
+                            }
+                        </div>
+                        <div class="readiness-actions">
+                            <button id="readiness-run" class="button button-primary" type="button" disabled="@(!CanRunReadiness)" @onclick="RunReadinessAsync">@(readinessSubmitting ? "Checking..." : "Run readiness check")</button>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(readinessError))
+                    {
+                        <div id="readiness-error" class="alert alert-error" role="alert">@readinessError</div>
+                    }
+                    @if (readinessResult is not null)
+                    {
+                        <div id="readiness-result" @ref="readinessResultElement" class="readiness-result" role="status" tabindex="-1" aria-live="polite">
+                            <strong>Result: @readinessResult.Outcome</strong>
+                            <span>Stage: @readinessResult.Stage</span>
+                            <span>Provider status: @(readinessResult.ProviderHttpStatus?.ToString() ?? "Not requested")</span>
+                            <span>Meaning: @readinessResult.DeliveryMeaning</span>
+                            @if (readinessResult.InvalidSettingNames.Count > 0)
+                            {
+                                <span>Invalid settings: @string.Join(", ", readinessResult.InvalidSettingNames)</span>
+                            }
+                        </div>
+                    }
+                </section>
+            </div>
+
+            <div class="settings-actions">
+                <button id="settings-save" class="button button-primary" type="submit" disabled="@submitting">@(submitting ? "Saving..." : "Save settings")</button>
+                <button id="settings-discard" class="button button-quiet" type="button" disabled="@submitting" @onclick="Discard">Discard changes</button>
+            </div>
+        </EditForm>
+    </section>
+}
+
+@code {
+    private CurrentUserResponse? currentUser;
+    private GlobalSettingsResponse? settings;
+    private SettingsDraft draft = new();
+    private bool loading = true;
+    private bool submitting;
+    private string? error;
+    private string? savedMessage;
+    private string? conflictMessage;
+    private string? activationError;
+    private string settingsVersion = string.Empty;
+    private bool clearConfirmationRequired;
+    private bool clearConfirmed;
+    private bool focusValidationSummary;
+    private ElementReference validationSummary;
+    private string readinessMode = "Sandbox";
+    private string readinessRecipient = string.Empty;
+    private bool confirmLiveSend;
+    private bool readinessSubmitting;
+    private string? readinessError;
+    private EmailReadinessResult? readinessResult;
+    private bool focusReadinessResult;
+    private ElementReference readinessResultElement;
+    private readonly List<string> validationErrors = [];
+
+    private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
+    private bool IsLiveReadiness => StringComparer.OrdinalIgnoreCase.Equals(readinessMode, "Live");
+    private bool CanRunReadiness => !readinessSubmitting &&
+        settingsVersion != "host-defaults" &&
+        (!IsLiveReadiness || confirmLiveSend && !string.IsNullOrWhiteSpace(readinessRecipient));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Identity.IdentityKey) && !IsEntraMode)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            currentUser = await Api.GetCurrentUserAsync();
+            if (currentUser is null || currentUser.Role != "GlobalAdministrator" || currentUser.Status != "Active")
+            {
+                error = "Your current role does not include settings access.";
+                return;
+            }
+
+            settings = await Api.GetGlobalSettingsAsync();
+            if (settings is null)
+            {
+                error = "Settings are unavailable. Try again in a moment.";
+                return;
+            }
+
+            settingsVersion = settings.SettingsVersion;
+            draft = SettingsDraft.From(settings);
+            activationError = settings.Activation.State == "ActivationFailed"
+                ? $"Settings are saved, but activation is waiting: {settings.Activation.FailureCategory ?? "Unknown"}."
+                : null;
+        }
+        catch
+        {
+            error = "Settings are unavailable. Try again in a moment.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusValidationSummary)
+        {
+            focusValidationSummary = false;
+            await validationSummary.FocusAsync();
+        }
+        else if (focusReadinessResult)
+        {
+            focusReadinessResult = false;
+            await readinessResultElement.FocusAsync();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (draft.ClearApiKey && !clearConfirmed)
+        {
+            clearConfirmationRequired = true;
+            return;
+        }
+
+        await SaveCoreAsync();
+    }
+
+    private async Task SaveCoreAsync()
+    {
+        validationErrors.Clear();
+        conflictMessage = null;
+        savedMessage = null;
+        activationError = null;
+        submitting = true;
+        try
+        {
+            var request = draft.ToRequest();
+            var updated = await Api.UpdateGlobalSettingsAsync(settingsVersion, request);
+            settings = updated;
+            settingsVersion = updated.SettingsVersion;
+            draft = SettingsDraft.From(updated);
+            clearConfirmed = false;
+            clearConfirmationRequired = false;
+            savedMessage = "Settings saved.";
+            activationError = updated.Activation.State == "ActivationFailed"
+                ? $"Settings are saved, but activation is waiting: {updated.Activation.FailureCategory ?? "Unknown"}."
+                : null;
+            await Branding.RefreshAsync();
+        }
+        catch (InvalidOperationException exception) when (exception.Message.Contains("412", StringComparison.Ordinal))
+        {
+            conflictMessage = "These settings changed in another session. Review the current values before saving again.";
+        }
+        catch
+        {
+            validationErrors.Add("The settings could not be saved. Review the values and try again.");
+            focusValidationSummary = true;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task ConfirmClearApiKey()
+    {
+        clearConfirmed = true;
+        clearConfirmationRequired = false;
+        await SaveCoreAsync();
+    }
+
+    private void CancelClearApiKey()
+    {
+        draft.ClearApiKey = false;
+        clearConfirmed = false;
+        clearConfirmationRequired = false;
+    }
+
+    private async Task ReloadAsync()
+    {
+        conflictMessage = null;
+        savedMessage = null;
+        await LoadAsync();
+    }
+
+    private void Discard()
+    {
+        if (settings is not null)
+        {
+            draft = SettingsDraft.From(settings);
+            savedMessage = "Unsaved changes discarded.";
+            validationErrors.Clear();
+            conflictMessage = null;
+        }
+    }
+
+    private async Task RunReadinessAsync()
+    {
+        readinessError = null;
+        readinessResult = null;
+        readinessSubmitting = true;
+        try
+        {
+            if (IsLiveReadiness && (string.IsNullOrWhiteSpace(readinessRecipient) || !confirmLiveSend))
+            {
+                readinessError = "Live readiness requires a valid test recipient and explicit confirmation.";
+                return;
+            }
+
+            readinessResult = await Api.CheckEmailReadinessAsync(new EmailReadinessRequest(
+                readinessMode,
+                IsLiveReadiness ? readinessRecipient.Trim() : null,
+                confirmLiveSend));
+            focusReadinessResult = true;
+        }
+        catch
+        {
+            readinessError = "The readiness check could not be completed. Review the saved settings and try again.";
+        }
+        finally
+        {
+            readinessSubmitting = false;
+        }
+    }
+
+    private sealed class SettingsDraft
+    {
+        public string? ProductName { get; set; }
+        public string? ShortProductName { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? FaviconUrl { get; set; }
+        public string? PrimaryColor { get; set; }
+        public string? AccentColor { get; set; }
+        public string? FocusColor { get; set; }
+        public string? SupportContactName { get; set; }
+        public string? SupportContactEmail { get; set; }
+        public string? OrganizationName { get; set; }
+        public string? InvitationAcceptanceBaseUrl { get; set; }
+        public int InvitationLifetimeHours { get; set; } = 72;
+        public bool SendGridEnabled { get; set; }
+        public string? ApiKey { get; set; }
+        public bool ClearApiKey { get; set; }
+        public string? SenderDisplayName { get; set; }
+        public string? SenderAddress { get; set; }
+        public string? ReplyToAddress { get; set; }
+        public string GlobalSupportRecipients { get; set; } = string.Empty;
+        public string? PublicPortalUrl { get; set; }
+        public int HttpTimeoutSeconds { get; set; } = 15;
+        public int MaximumAttempts { get; set; } = 4;
+        public int MinimumBackoffSeconds { get; set; } = 5;
+        public int MaximumBackoffSeconds { get; set; } = 60;
+        public string DataResidency { get; set; } = "Global";
+        public int BatchSize { get; set; } = 25;
+        public int LeaseSeconds { get; set; } = 60;
+
+        public static SettingsDraft From(GlobalSettingsResponse response) => new()
+        {
+            ProductName = response.Branding.ProductName,
+            ShortProductName = response.Branding.ShortProductName,
+            LogoUrl = response.Branding.LogoUrl,
+            FaviconUrl = response.Branding.FaviconUrl,
+            PrimaryColor = response.Branding.PrimaryColor,
+            AccentColor = response.Branding.AccentColor,
+            FocusColor = response.Branding.FocusColor,
+            SupportContactName = response.Branding.SupportContactName,
+            SupportContactEmail = response.Branding.SupportContactEmail,
+            OrganizationName = response.Branding.OrganizationName,
+            InvitationAcceptanceBaseUrl = response.Invitation.AcceptanceBaseUrl,
+            InvitationLifetimeHours = response.Invitation.LifetimeHours,
+            SendGridEnabled = response.SendGrid.Enabled,
+            SenderDisplayName = response.SendGrid.SenderDisplayName,
+            SenderAddress = response.SendGrid.SenderAddress,
+            ReplyToAddress = response.SendGrid.ReplyToAddress,
+            GlobalSupportRecipients = string.Join(Environment.NewLine, response.SendGrid.GlobalSupportRecipients),
+            PublicPortalUrl = response.SendGrid.PublicPortalUrl,
+            HttpTimeoutSeconds = response.SendGrid.HttpTimeoutSeconds,
+            MaximumAttempts = response.SendGrid.MaximumAttempts,
+            MinimumBackoffSeconds = response.SendGrid.MinimumBackoffSeconds,
+            MaximumBackoffSeconds = response.SendGrid.MaximumBackoffSeconds,
+            DataResidency = response.SendGrid.DataResidency,
+            BatchSize = response.SendGrid.BatchSize,
+            LeaseSeconds = response.SendGrid.LeaseSeconds
+        };
+
+        public UpdateGlobalSettingsRequest ToRequest() => new(
+            new BrandingSettingsUpdate(ProductName, ShortProductName, LogoUrl, FaviconUrl, PrimaryColor, AccentColor, FocusColor, SupportContactName, SupportContactEmail, OrganizationName),
+            new InvitationSettingsUpdate(InvitationAcceptanceBaseUrl, InvitationLifetimeHours),
+            new SendGridSettingsUpdate(
+                SendGridEnabled,
+                SenderDisplayName,
+                SenderAddress,
+                ReplyToAddress,
+                GlobalSupportRecipients
+                    .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                PublicPortalUrl,
+                HttpTimeoutSeconds,
+                MaximumAttempts,
+                MinimumBackoffSeconds,
+                MaximumBackoffSeconds,
+                DataResidency,
+                BatchSize,
+                LeaseSeconds,
+                string.IsNullOrWhiteSpace(ApiKey) ? null : ApiKey,
+                ClearApiKey));
+    }
+}

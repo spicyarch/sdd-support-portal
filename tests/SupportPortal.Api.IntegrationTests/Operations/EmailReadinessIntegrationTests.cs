@@ -128,6 +128,55 @@ public sealed class EmailReadinessIntegrationTests
         Assert.DoesNotContain("api", JsonSerializer.Serialize(payload), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task ProviderUnavailableReadinessReturnsSafeOutcomeWithoutNotificationMutation()
+    {
+        var fixture = CreateFixture(new AppEmailReadinessResult(
+            EmailReadinessMode.Live,
+            EmailReadinessOutcome.ProviderUnavailable,
+            "SenderAcceptance",
+            null,
+            "NetworkUnavailable",
+            DateTimeOffset.UtcNow,
+            "correlation",
+            "NoEmailSent",
+            []));
+        var notificationCount = fixture.Store.GetNotifications().Count;
+
+        var result = await fixture.Endpoint.Check(fixture.CreateRequest("global-admin", new
+        {
+            mode = "Live",
+            testRecipient = "operator-recipient@example.test",
+            confirmLiveSend = true
+        }));
+
+        var response = Assert.IsType<ObjectResult>(result);
+        var payload = Assert.IsType<ContractEmailReadinessResult>(response.Value);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, response.StatusCode);
+        Assert.Equal("ProviderUnavailable", payload.Outcome);
+        Assert.Equal("NetworkUnavailable", payload.FailureCategory);
+        Assert.Equal("NoEmailSent", payload.DeliveryMeaning);
+        Assert.Equal(notificationCount, fixture.Store.GetNotifications().Count);
+        Assert.DoesNotContain("operator-recipient@example.test", JsonSerializer.Serialize(payload), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ReadinessAuditContainsSafeOperationMetadataOnly()
+    {
+        var fixture = CreateFixture();
+
+        await fixture.Endpoint.Check(fixture.CreateRequest("global-admin", new { mode = "Sandbox" }));
+
+        var audit = Assert.Single(fixture.Store.GetAuditEvents(), item => item.EventType == "EmailReadinessChecked");
+        Assert.True(audit.Succeeded);
+        Assert.Contains("EmailReadinessChecked", audit.Metadata, StringComparison.Ordinal);
+        Assert.Contains("Sandbox", audit.Metadata, StringComparison.Ordinal);
+        Assert.Contains("NoEmailSent", audit.Metadata, StringComparison.Ordinal);
+        Assert.DoesNotContain("operator-recipient@example.test", audit.Metadata, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("apiKey", audit.Metadata, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("provider-body", audit.Metadata, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static Fixture CreateFixture(AppEmailReadinessResult? response = null)
     {
         var store = new InMemoryPortalStore();
@@ -140,7 +189,7 @@ public sealed class EmailReadinessIntegrationTests
             .Build();
         var gateway = new FakeReadinessGateway(response);
         var identityFactory = new EntraClaimsPrincipalFactory(configuration, store);
-        var endpoint = new EmailReadinessEndpoint(identityFactory, new EmailReadinessService(gateway));
+        var endpoint = new EmailReadinessEndpoint(identityFactory, new EmailReadinessService(gateway, store: store));
         return new Fixture(endpoint, store, gateway, configuration);
     }
 

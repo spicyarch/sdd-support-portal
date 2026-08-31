@@ -9,6 +9,8 @@
     "Portal__BootstrapTenantId": "",
     "Portal__BootstrapObjectId": "",
     "Portal__AllowedOrigins": "http://localhost:5258,https://localhost:7258",
+    "Portal__KeyVaultUri": "",
+    "Portal__SendGridApiKeySecretName": "support-portal-sendgrid-api-key",
     "Portal__InvitationTokenKey": "",
     "Portal__InvitationAcceptanceBaseUrl": "http://localhost:5258/invitations/accept",
     "Portal__InvitationLifetimeHours": "72",

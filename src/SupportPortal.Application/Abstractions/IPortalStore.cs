@@ -3,6 +3,7 @@ using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.SupportRequests;
 using SupportPortal.Domain.Teams;
 using SupportPortal.Domain.Notifications;
+using SupportPortal.Domain.Settings;
 
 namespace SupportPortal.Application.Abstractions;
 
@@ -50,6 +51,10 @@ public interface IPortalStore
 
     IReadOnlyList<NotificationAttempt> GetNotificationAttempts(Guid notificationDeliveryId);
 
+    DeploymentSettings? GetDeploymentSettings();
+
+    IReadOnlyList<DeploymentSettingsRecipient> GetDeploymentSettingsRecipients(Guid deploymentSettingsId);
+
     IReadOnlyList<NotificationDelivery> GetDueNotificationDeliveries(DateTimeOffset now, int maximumCount);
 
     (Notification Notification, NotificationDelivery Delivery, NotificationAttempt Attempt)? TryStartNotificationAttempt(
@@ -77,6 +82,12 @@ public interface IPortalStore
     void AddNotificationDelivery(NotificationDelivery delivery);
 
     void AddNotificationAttempt(NotificationAttempt attempt);
+
+    void AddDeploymentSettings(DeploymentSettings settings);
+
+    void AddDeploymentSettingsRecipient(DeploymentSettingsRecipient recipient);
+
+    void RemoveDeploymentSettingsRecipients(Guid deploymentSettingsId);
 
     void Execute(Action action);
 

@@ -33,3 +33,21 @@ fields, readiness returns only safe outcome fields, and the SendGrid adapter sen
 tracking disabled and only an opaque `notification_id` custom argument. Remaining release gates are
 environment checks: SQL concurrency/restart validation, Azure Key Vault reference verification,
 Domain Authentication, and an independent security assessment.
+
+## Settings Signals
+
+Settings saves and rejected operations use the fixed `DeploymentSettings` audit target. Safe metadata
+contains the operation, outcome, revision, correlation ID, and allowlisted setting names. API-key
+replacement and clear actions have dedicated event types but never record the key or protected
+version. Readiness audits contain only mode, stage, safe outcome, provider status, failure category,
+delivery meaning, checked time, correlation ID, and safe invalid setting names.
+
+The settings response and health endpoint expose process-local activation state: active and desired
+revisions, last attempt and successful-refresh times, safe failure category, invalid setting names,
+and retry state. `Refreshing` means a newer revision is being loaded; `ActivationFailed` means the
+prior valid snapshot remains active and another poll will retry. Delivery counts remain visible when
+SendGrid is disabled so operators can distinguish paused work from deleted history.
+
+Operational review must search for raw keys, protected references, recipient addresses, test
+recipients, invitation tokens, message bodies, provider bodies, and arbitrary configuration values
+in logs, traces, telemetry, audit metadata, command receipts, health output, and readiness output.

@@ -77,7 +77,7 @@ public static class ApiResponse
         response.Headers.AccessControlAllowHeaders = allowDevelopmentIdentity
             ? "Authorization, Content-Type, If-Match, If-None-Match, Idempotency-Key, X-Development-Identity"
             : "Authorization, Content-Type, If-Match, If-None-Match, Idempotency-Key";
-        response.Headers.AccessControlAllowMethods = "GET, POST, PATCH, OPTIONS";
+        response.Headers.AccessControlAllowMethods = "GET, POST, PUT, PATCH, OPTIONS";
         response.Headers.Vary = "Origin";
         response.Headers.XContentTypeOptions = "nosniff";
         response.Headers.XFrameOptions = "DENY";

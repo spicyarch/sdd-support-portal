@@ -52,14 +52,12 @@ public sealed class BrandingState
             }
 
             var candidate = await response.Content.ReadFromJsonAsync<EffectiveBrandingResponse>(cancellationToken: cancellationToken);
-            if (candidate is null || !IsSafe(candidate))
+            if (candidate is null)
             {
                 return;
             }
 
-            Current = candidate;
-            etag = candidate.ProfileVersion;
-            Changed?.Invoke();
+            Apply(candidate);
         }
         catch (HttpRequestException)
         {
@@ -71,6 +69,18 @@ public sealed class BrandingState
 
     public string CssVariables =>
         $"--brand-primary:{Current.PrimaryColor};--brand-accent:{Current.AccentColor};--brand-focus:{Current.FocusColor};";
+
+    public void Apply(EffectiveBrandingResponse candidate)
+    {
+        if (!IsSafe(candidate))
+        {
+            return;
+        }
+
+        Current = candidate;
+        etag = candidate.ProfileVersion;
+        Changed?.Invoke();
+    }
 
     public static EffectiveBrandingResponse CreateDefault() => new(
         "Support Portal",

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using SupportPortal.Application.Abstractions;
 using SupportPortal.Application.Common;
+using SupportPortal.Contracts.Settings;
 using SupportPortal.Domain.Auditing;
 
 namespace SupportPortal.Application.Commands;
@@ -50,5 +51,34 @@ public sealed class IdempotencyService
     {
         var payload = Encoding.UTF8.GetBytes($"{operation}:{JsonSerializer.Serialize(request)}");
         return Convert.ToHexString(SHA256.HashData(payload));
+    }
+
+    public static string FingerprintSettings(UpdateGlobalSettingsRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var safeRequest = new
+        {
+            request.Branding,
+            request.Invitation,
+            SendGrid = new
+            {
+                request.SendGrid.Enabled,
+                request.SendGrid.SenderDisplayName,
+                request.SendGrid.SenderAddress,
+                request.SendGrid.ReplyToAddress,
+                request.SendGrid.GlobalSupportRecipients,
+                request.SendGrid.PublicPortalUrl,
+                request.SendGrid.HttpTimeoutSeconds,
+                request.SendGrid.MaximumAttempts,
+                request.SendGrid.MinimumBackoffSeconds,
+                request.SendGrid.MaximumBackoffSeconds,
+                request.SendGrid.DataResidency,
+                request.SendGrid.BatchSize,
+                request.SendGrid.LeaseSeconds,
+                ApiKeySupplied = !string.IsNullOrWhiteSpace(request.SendGrid.ApiKey),
+                request.SendGrid.ClearApiKey
+            }
+        };
+        return Fingerprint("replace-settings", safeRequest);
     }
 }

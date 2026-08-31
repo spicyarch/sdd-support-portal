@@ -1,0 +1,565 @@
+openapi: 3.1.0
+info:
+  title: Support Portal Global Administrator Settings API
+  version: 1.0.0
+  license:
+    name: Proprietary - internal use only
+    identifier: LicenseRef-Proprietary
+  description: |
+    Additive administrator-only operations for deployment-wide runtime-safe settings.
+    The SendGrid readiness operation remains defined by the existing
+    specs/002-branding-smtp-notifications/contracts/branding-email-api.yaml contract
+    at /operations/email/readiness and consumes the current settings snapshot.
+servers:
+  - url: /api/v1
+security:
+  - EntraBearer: []
+tags:
+  - name: Global Administrator Settings
+    description: Runtime-safe deployment settings and activation state.
+paths:
+  /settings:
+    get:
+      tags: [Global Administrator Settings]
+      operationId: getGlobalAdministratorSettings
+      summary: Get deployment settings for the active Global Administrator.
+      description: |
+        Returns the effective non-secret Branding, invitation, and SendGrid values,
+        safe source and activation state, and API-key configured state. Only an active
+        Global Administrator may call this operation. The API key and protected secret
+        provider reference are never returned.
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Current effective settings.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '304':
+          description: The supplied ETag still identifies the current settings revision.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '401':
+          description: A valid Microsoft Entra access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: The caller is not an active Global Administrator.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    put:
+      tags: [Global Administrator Settings]
+      operationId: replaceGlobalAdministratorSettings
+      summary: Replace the deployment's runtime-safe settings.
+      description: |
+        Validates the complete candidate and commits it atomically. The write-only
+        SendGrid API key is accepted only for replacement; omitting or leaving it blank
+        preserves the current key. Clearing the key requires clearApiKey=true. A stale
+        If-Match value returns 412. The response never contains the submitted key.
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSettingsRequest'
+      responses:
+        '200':
+          description: Settings committed and the current process refreshed.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '400':
+          description: The candidate contains invalid or inconsistent values.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: A valid Microsoft Entra access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: The caller is not an active Global Administrator.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: The idempotency key was already used for a different safe request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The settings changed after the caller loaded its edit form.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: The protected secret provider or durable settings store is unavailable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    EntraBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Microsoft Entra token validated by the Functions host and portal authorization layer.
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Previously returned settings revision.
+      schema:
+        type: string
+        maxLength: 160
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Settings revision returned by a prior GET or successful PUT.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 160
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID used to safely replay the same settings replacement.
+      schema:
+        type: string
+        format: uuid
+  headers:
+    ETag:
+      description: Opaque settings revision used for cache validation and stale-write protection.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 160
+  schemas:
+    SettingsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - settingsVersion
+        - source
+        - branding
+        - invitation
+        - sendGrid
+        - emailAvailability
+        - activation
+      properties:
+        settingsVersion:
+          type: string
+          minLength: 1
+          maxLength: 160
+        source:
+          type: string
+          enum: [HostDefaults, Mixed, AdministratorOverride]
+        updatedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        updatedBy:
+          type:
+            - object
+            - 'null'
+          additionalProperties: false
+          required: [userId, displayName]
+          properties:
+            userId:
+              type: string
+              format: uuid
+            displayName:
+              type: string
+              minLength: 1
+              maxLength: 200
+        branding:
+          $ref: '#/components/schemas/BrandingSettings'
+        invitation:
+          $ref: '#/components/schemas/InvitationSettings'
+        sendGrid:
+          $ref: '#/components/schemas/SendGridSettingsView'
+        emailAvailability:
+          $ref: '#/components/schemas/EmailAvailability'
+        activation:
+          $ref: '#/components/schemas/SettingsActivation'
+    BrandingSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - productName
+        - shortProductName
+        - logoUrl
+        - faviconUrl
+        - primaryColor
+        - accentColor
+        - focusColor
+        - supportContactName
+        - supportContactEmail
+        - organizationName
+      properties:
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        shortProductName:
+          type: string
+          minLength: 1
+          maxLength: 20
+        logoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          maxLength: 2048
+        faviconUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          maxLength: 2048
+        primaryColor:
+          type: string
+          pattern: '^#[A-Fa-f0-9]{6}$'
+        accentColor:
+          type: string
+          pattern: '^#[A-Fa-f0-9]{6}$'
+        focusColor:
+          type: string
+          pattern: '^#[A-Fa-f0-9]{6}$'
+        supportContactName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        supportContactEmail:
+          type: string
+          format: email
+          maxLength: 320
+        organizationName:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+    InvitationSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - acceptanceBaseUrl
+        - lifetimeHours
+      properties:
+        acceptanceBaseUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+        lifetimeHours:
+          type: integer
+          minimum: 1
+          maximum: 168
+    SendGridSettingsView:
+      type: object
+      additionalProperties: false
+      required:
+        - enabled
+        - apiKeyConfigured
+        - apiKeyMode
+        - senderDisplayName
+        - senderAddress
+        - replyToAddress
+        - globalSupportRecipients
+        - publicPortalUrl
+        - httpTimeoutSeconds
+        - maximumAttempts
+        - minimumBackoffSeconds
+        - maximumBackoffSeconds
+        - dataResidency
+        - batchSize
+        - leaseSeconds
+      properties:
+        enabled:
+          type: boolean
+        apiKeyConfigured:
+          type: boolean
+          description: Whether a usable key is available; the key itself is never returned.
+        apiKeyMode:
+          type: string
+          enum: [Inherit, Managed, Cleared]
+        senderDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        senderAddress:
+          type: string
+          format: email
+          maxLength: 320
+        replyToAddress:
+          type: string
+          format: email
+          maxLength: 320
+        globalSupportRecipients:
+          type: array
+          uniqueItems: true
+          maxItems: 100
+          items:
+            type: string
+            format: email
+            maxLength: 320
+        publicPortalUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+        httpTimeoutSeconds:
+          type: integer
+          minimum: 1
+          maximum: 120
+        maximumAttempts:
+          type: integer
+          minimum: 1
+          maximum: 10
+        minimumBackoffSeconds:
+          type: integer
+          minimum: 1
+          maximum: 3600
+        maximumBackoffSeconds:
+          type: integer
+          minimum: 1
+          maximum: 86400
+        dataResidency:
+          type: string
+          enum: [Global, Eu]
+        batchSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        leaseSeconds:
+          type: integer
+          minimum: 30
+          maximum: 600
+    UpdateSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [branding, invitation, sendGrid]
+      properties:
+        branding:
+          $ref: '#/components/schemas/BrandingSettings'
+        invitation:
+          $ref: '#/components/schemas/InvitationSettings'
+        sendGrid:
+          $ref: '#/components/schemas/SendGridSettingsUpdate'
+    SendGridSettingsUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - enabled
+        - senderDisplayName
+        - senderAddress
+        - replyToAddress
+        - globalSupportRecipients
+        - publicPortalUrl
+        - httpTimeoutSeconds
+        - maximumAttempts
+        - minimumBackoffSeconds
+        - maximumBackoffSeconds
+        - dataResidency
+        - batchSize
+        - leaseSeconds
+      properties:
+        enabled:
+          type: boolean
+        senderDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        senderAddress:
+          type: string
+          format: email
+          maxLength: 320
+        replyToAddress:
+          type: string
+          format: email
+          maxLength: 320
+        globalSupportRecipients:
+          type: array
+          uniqueItems: true
+          maxItems: 100
+          items:
+            type: string
+            format: email
+            maxLength: 320
+        publicPortalUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+        httpTimeoutSeconds:
+          type: integer
+          minimum: 1
+          maximum: 120
+        maximumAttempts:
+          type: integer
+          minimum: 1
+          maximum: 10
+        minimumBackoffSeconds:
+          type: integer
+          minimum: 1
+          maximum: 3600
+        maximumBackoffSeconds:
+          type: integer
+          minimum: 1
+          maximum: 86400
+        dataResidency:
+          type: string
+          enum: [Global, Eu]
+        batchSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        leaseSeconds:
+          type: integer
+          minimum: 30
+          maximum: 600
+        apiKey:
+          type:
+            - string
+            - 'null'
+          writeOnly: true
+          maxLength: 512
+          description: Replacement key only; never returned or persisted in the settings row.
+        clearApiKey:
+          type: boolean
+          default: false
+          description: Explicitly disables use of the current key; mutually exclusive with apiKey.
+    EmailAvailability:
+      type: object
+      additionalProperties: false
+      required: [state, invalidSettingNames, checkedAt]
+      properties:
+        state:
+          type: string
+          enum: [Disabled, Ready, InvalidConfiguration]
+        invalidSettingNames:
+          type: array
+          uniqueItems: true
+          maxItems: 32
+          items:
+            type: string
+            enum:
+              - Branding:ProductName
+              - Branding:ShortProductName
+              - Branding:LogoUrl
+              - Branding:FaviconUrl
+              - Branding:PrimaryColor
+              - Branding:AccentColor
+              - Branding:FocusColor
+              - Branding:SupportContactName
+              - Branding:SupportContactEmail
+              - Branding:OrganizationName
+              - Portal:InvitationAcceptanceBaseUrl
+              - Portal:InvitationLifetimeHours
+              - SendGrid:Enabled
+              - SendGrid:ApiKey
+              - SendGrid:SenderDisplayName
+              - SendGrid:SenderAddress
+              - SendGrid:ReplyToAddress
+              - SendGrid:GlobalSupportRecipients
+              - SendGrid:PublicPortalUrl
+              - SendGrid:HttpTimeoutSeconds
+              - SendGrid:MaximumAttempts
+              - SendGrid:MinimumBackoffSeconds
+              - SendGrid:MaximumBackoffSeconds
+              - SendGrid:DataResidency
+              - SendGrid:BatchSize
+              - SendGrid:LeaseSeconds
+        checkedAt:
+          type: string
+          format: date-time
+    SettingsActivation:
+      type: object
+      additionalProperties: false
+      required:
+        - state
+        - activeVersion
+        - desiredVersion
+        - lastAttemptAt
+        - retryState
+      properties:
+        state:
+          type: string
+          enum: [Active, Refreshing, ActivationFailed]
+        activeVersion:
+          type: string
+          maxLength: 160
+        desiredVersion:
+          type: string
+          maxLength: 160
+        lastAttemptAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        lastSuccessfulAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        failureCategory:
+          type:
+            - string
+            - 'null'
+          enum: [null, InvalidConfiguration, SecretProviderUnavailable, SettingsStoreUnavailable, Unknown]
+        retryState:
+          type: string
+          enum: [NotRequired, InProgress, Scheduled]
+        invalidSettingNames:
+          type: array
+          uniqueItems: true
+          maxItems: 32
+          items:
+            type: string
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [title, status, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          maxLength: 1000
+        traceId:
+          type: string
+          minLength: 1
+          maxLength: 128

@@ -26,6 +26,10 @@
         {
             <NavLink class="nav-link" href="admin"><span class="nav-icon" aria-hidden="true">04</span><span>Administration</span></NavLink>
         }
+        @if (CanManageSettings)
+        {
+            <NavLink class="nav-link" href="settings"><span class="nav-icon" aria-hidden="true">05</span><span>Settings</span></NavLink>
+        }
         <NavLink class="nav-link" href="login"><span class="nav-icon" aria-hidden="true">ID</span><span>Sign in</span></NavLink>
     </nav>
 </div>
@@ -39,6 +43,8 @@
     private bool CanUseGlobalQueue => currentUser?.Role is "GlobalSupportUser" or "GlobalAdministrator";
 
     private bool CanAdministrate => currentUser?.Role is "GlobalAdministrator" or "TeamAdministrator";
+
+    private bool CanManageSettings => currentUser?.Role == "GlobalAdministrator";
 
     private bool IsEntraMode => StringComparer.OrdinalIgnoreCase.Equals(Configuration["Authentication:Mode"], "Entra");
 

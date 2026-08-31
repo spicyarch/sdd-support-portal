@@ -20,3 +20,30 @@ to make a failed migration or rollback appear successful.
 
 Backups, point-in-time recovery, restore verification, and migration forward-repair are required before
 real user data or an upper lifecycle is accepted.
+
+## Global Settings Recovery
+
+The Global Administrator settings migration is additive. Before applying it, capture the migration
+version, the singleton `DeploymentSettings` row, `DeploymentSettingsRecipients` rows, related audit
+events, and notification delivery counts. The settings table contains non-secret overrides and a
+protected-secret version reference only; there is no API-key value to recover from SQL.
+
+If migration application stops, restore or forward-repair the schema with the reviewed Azure SQL
+script. Do not delete requests, messages, invitations, notifications, delivery rows, attempts,
+command receipts, or audit history to make the migration appear clean. Verify the singleton scope and
+recipient uniqueness before restarting application instances.
+
+If a settings save staged a protected secret but the SQL commit failed, leave the old settings row
+and active snapshot in place. Record the failed operation using safe identifiers, then identify the
+unreferenced protected-secret version through the provider's version inventory and clean it up using
+the approved secret-retention procedure. Never copy the secret value into the incident record.
+
+If an instance reports `ActivationFailed`, verify the shared revision, protected-secret reference,
+Key Vault identity access, and safe invalid setting names. The prior valid snapshot remains active;
+after the underlying issue is repaired, the next revision poll or an authenticated request retries
+activation. Confirm active and desired revisions converge before declaring recovery complete.
+
+When SendGrid is disabled during recovery, retain pending and retryable notification deliveries.
+Re-enabling a valid snapshot makes eligible work available through the existing per-recipient keys
+and leases. Reconcile expired leases and confirm no duplicate logical notification or recipient row
+was created before resuming provider delivery.

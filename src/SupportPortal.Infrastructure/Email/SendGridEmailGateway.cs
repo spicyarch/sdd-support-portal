@@ -5,6 +5,7 @@ using SendGrid;
 using SendGrid.Helpers.Mail;
 using SupportPortal.Application.Abstractions;
 using SupportPortal.Application.Notifications;
+using SupportPortal.Application.Settings;
 using SupportPortal.Domain.Notifications;
 using SupportPortal.Infrastructure.Configuration;
 
@@ -15,20 +16,24 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
     private readonly IServiceProvider services;
     private readonly SendGridOptions options;
     private readonly EmailDeliveryAvailability availability;
+    private readonly RuntimeSettingsState? runtimeSettings;
 
     public SendGridEmailGateway(
         IServiceProvider services,
         SendGridOptions options,
-        EmailDeliveryAvailability availability)
+        EmailDeliveryAvailability availability,
+        RuntimeSettingsState? runtimeSettings = null)
     {
         this.services = services;
         this.options = options;
         this.availability = availability;
+        this.runtimeSettings = runtimeSettings;
     }
 
     public async Task<EmailDeliveryResult> SendAsync(EmailDeliveryRequest request, CancellationToken cancellationToken)
     {
-        if (!availability.CanSend)
+        var currentOptions = CurrentOptions;
+        if (!CurrentAvailability.CanSend)
         {
             return new EmailDeliveryResult(
                 EmailDeliveryOutcome.PermanentFailure,
@@ -37,7 +42,7 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
                 NotificationFailureCategory.InvalidConfiguration.ToString());
         }
 
-        return await SendCoreAsync(request, cancellationToken);
+        return await SendCoreAsync(request, currentOptions, cancellationToken);
     }
 
     public async Task<EmailReadinessResult> CheckAsync(
@@ -45,8 +50,10 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
         string correlationId,
         CancellationToken cancellationToken)
     {
+        var currentOptions = CurrentOptions;
+        var currentAvailability = CurrentAvailability;
         var checkedAt = DateTimeOffset.UtcNow;
-        if (!options.Enabled)
+        if (!currentOptions.Enabled)
         {
             return new EmailReadinessResult(
                 request.Mode,
@@ -60,7 +67,7 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
                 []);
         }
 
-        if (availability.State == EmailDeliveryState.InvalidConfiguration)
+        if (currentAvailability.State == EmailDeliveryState.InvalidConfiguration)
         {
             return new EmailReadinessResult(
                 request.Mode,
@@ -71,7 +78,7 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
                 checkedAt,
                 correlationId,
                 "NoProviderRequestMade",
-                availability.InvalidSettingNames);
+                currentAvailability.InvalidSettingNames);
         }
 
         if (request.Mode == EmailReadinessMode.Live &&
@@ -97,13 +104,14 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
                 Guid.NewGuid(),
                 recipient,
                 null,
-                options.SenderAddress!,
-                options.SenderDisplayName!,
-                options.ReplyToAddress,
-                $"{options.SenderDisplayName}: SendGrid readiness check",
+                currentOptions.SenderAddress!,
+                currentOptions.SenderDisplayName!,
+                currentOptions.ReplyToAddress,
+                $"{currentOptions.SenderDisplayName}: SendGrid readiness check",
                 "This is a SendGrid readiness check.",
                 "<p>This is a SendGrid readiness check.</p>",
                 request.Mode == EmailReadinessMode.Sandbox),
+            currentOptions,
             cancellationToken);
 
         if (request.Mode == EmailReadinessMode.Sandbox && delivery.StatusCode == 200)
@@ -142,21 +150,31 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
             outcome,
             request.Mode == EmailReadinessMode.Sandbox ? "PayloadValidation" : "SenderAcceptance",
             delivery.StatusCode,
-            delivery.FailureCategory ?? "ProviderFailure",
+            ToSafeReadinessFailureCategory(delivery.FailureCategory),
             checkedAt,
             correlationId,
             "NoEmailSent",
             []);
     }
 
-    private async Task<EmailDeliveryResult> SendCoreAsync(EmailDeliveryRequest request, CancellationToken cancellationToken)
+    private static string ToSafeReadinessFailureCategory(string? category) => category switch
+    {
+        "AmbiguousNetwork" => "NetworkUnavailable",
+        "Unknown" or null or "" => "ProviderFailure",
+        _ => category
+    };
+
+    private async Task<EmailDeliveryResult> SendCoreAsync(
+        EmailDeliveryRequest request,
+        SendGridOptions currentOptions,
+        CancellationToken cancellationToken)
     {
         var message = new SendGridMessage();
         var senderAddress = string.IsNullOrWhiteSpace(request.SenderAddress)
-            ? options.SenderAddress
+            ? currentOptions.SenderAddress
             : request.SenderAddress;
         var senderDisplayName = string.IsNullOrWhiteSpace(request.SenderDisplayName)
-            ? options.SenderDisplayName
+            ? currentOptions.SenderDisplayName
             : request.SenderDisplayName;
         message.SetFrom(new EmailAddress(
             senderAddress!,
@@ -165,7 +183,7 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
         message.SetGlobalSubject(request.Subject);
         message.AddContent(MimeType.Text, request.PlainTextContent);
         message.AddContent(MimeType.Html, request.HtmlContent);
-        var replyTo = request.ReplyToAddress ?? options.ReplyToAddress;
+        var replyTo = request.ReplyToAddress ?? currentOptions.ReplyToAddress;
         if (!string.IsNullOrWhiteSpace(replyTo))
         {
             message.SetReplyTo(new EmailAddress(replyTo));
@@ -182,7 +200,7 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
 
         try
         {
-            var response = await services.GetRequiredService<ISendGridClient>().SendEmailAsync(message, cancellationToken);
+            var response = await SendWithCurrentClientAsync(currentOptions, message, cancellationToken);
             var providerMessageId = response.Headers.TryGetValues("X-Message-Id", out var messageIds)
                 ? messageIds.FirstOrDefault()
                 : null;
@@ -235,5 +253,56 @@ public sealed class SendGridEmailGateway : IEmailDeliveryGateway, IEmailReadines
         }
 
         return null;
+    }
+
+    private SendGridOptions CurrentOptions => runtimeSettings is null
+        ? options
+        : new SendGridOptions
+        {
+            Enabled = runtimeSettings.Current.SendGrid.Enabled,
+            ApiKey = runtimeSettings.Current.SendGrid.ApiKey,
+            SenderDisplayName = runtimeSettings.Current.SendGrid.SenderDisplayName,
+            SenderAddress = runtimeSettings.Current.SendGrid.SenderAddress,
+            ReplyToAddress = runtimeSettings.Current.SendGrid.ReplyToAddress,
+            GlobalSupportRecipients = runtimeSettings.Current.SendGrid.GlobalSupportRecipients,
+            PublicPortalUrl = runtimeSettings.Current.SendGrid.PublicPortalUrl,
+            HttpTimeoutSeconds = runtimeSettings.Current.SendGrid.HttpTimeoutSeconds,
+            MaximumAttempts = runtimeSettings.Current.SendGrid.MaximumAttempts,
+            MinimumBackoffSeconds = runtimeSettings.Current.SendGrid.MinimumBackoffSeconds,
+            MaximumBackoffSeconds = runtimeSettings.Current.SendGrid.MaximumBackoffSeconds,
+            DataResidency = runtimeSettings.Current.SendGrid.DataResidency,
+            BatchSize = runtimeSettings.Current.SendGrid.BatchSize,
+            LeaseSeconds = runtimeSettings.Current.SendGrid.LeaseSeconds
+        };
+
+    private EmailDeliveryAvailability CurrentAvailability => runtimeSettings is null
+        ? availability
+        : new EmailDeliveryAvailability(
+            (EmailDeliveryState)runtimeSettings.Current.EmailAvailability.State,
+            runtimeSettings.Current.EmailAvailability.InvalidSettingNames,
+            runtimeSettings.Current.EmailAvailability.CheckedAt);
+
+    private async Task<Response> SendWithCurrentClientAsync(
+        SendGridOptions currentOptions,
+        SendGridMessage message,
+        CancellationToken cancellationToken)
+    {
+        if (runtimeSettings is null)
+        {
+            return await services.GetRequiredService<ISendGridClient>().SendEmailAsync(message, cancellationToken);
+        }
+
+        var clientOptions = new SendGridClientOptions
+        {
+            ApiKey = currentOptions.ApiKey
+        };
+        clientOptions.SetDataResidency(
+            StringComparer.OrdinalIgnoreCase.Equals(currentOptions.DataResidency, "Eu") ? "eu" : "global");
+        using var httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(currentOptions.HttpTimeoutSeconds)
+        };
+        var client = new SendGridClient(httpClient, clientOptions);
+        return await client.SendEmailAsync(message, cancellationToken);
     }
 }

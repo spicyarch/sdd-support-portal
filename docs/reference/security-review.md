@@ -18,6 +18,33 @@ This baseline is a release gate, not a substitute for a threat model or penetrat
 - Historical messages, requests, memberships, and audit events are not deleted by normal roles.
 - The final active Global Administrator is protected by a domain policy and integration acceptance.
 - Dependencies are restored from central versions and reviewed in CI.
+
+## Global Administrator Settings Review
+
+- The settings route is convenient UI access only; every read, save, clear, and readiness operation
+	resolves the current portal user and requires an active Global Administrator.
+- The editable scope is limited to deployment-wide runtime-safe Branding, invitation, and SendGrid
+	business settings. Entra tenant/audience, CORS, SQL, Key Vault identity, Function authentication,
+	invitation signing, and other host-security controls remain outside the page.
+- The SendGrid API key is write-only, is blank in read responses, and is staged only through the
+	protected-secret adapter. SQL stores a non-secret provider reference and mode, never the key value.
+	Blank input preserves the current key; explicit clear suppresses inherited host configuration.
+- Complete candidates are validated before mutation. `If-Match` prevents stale overwrites,
+	idempotency receipts prevent duplicate replay, and settings plus recipient rows, audit data, and
+	safe command receipts commit atomically.
+- Responses, errors, health, readiness, audit metadata, browser storage, traces, and telemetry are
+	restricted to configured state, safe categories, opaque revisions, timestamps, counts, and
+	allowlisted setting names. Recipient addresses appear only in the authorized editable settings
+	view.
+- Runtime snapshots are immutable and process-local. A successful save refreshes locally and shared
+	revision polling converges other processes within 60 seconds. Failed activation retains the last
+	known-good snapshot and reports only safe failure and retry state.
+- Readiness uses the saved snapshot and rechecks administrator access around provider execution.
+	Sandbox uses SendGrid sandbox mode and reports no email sent; live mode requires explicit
+	confirmation and reports provider acceptance separately from mailbox delivery.
+- Disabling SendGrid stops scheduling and provider delivery without deleting accepted portal work or
+	durable notification history. Re-enabling valid settings reuses existing delivery keys and leases
+	so pending work resumes without duplicate logical notifications.
 - SendGrid delivery uses the official C# client, HTTPS Web API v3, a `mail.send`-only API key, and
 	user-secrets/Key Vault-backed configuration; no SMTP transport or raw provider HTTP client exists.
 - Notification scheduling is atomic with accepted request, reply, and invitation mutations. SQL

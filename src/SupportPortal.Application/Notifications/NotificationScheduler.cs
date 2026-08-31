@@ -1,5 +1,6 @@
 using System.Text.Json;
 using SupportPortal.Application.Abstractions;
+using SupportPortal.Application.Settings;
 using SupportPortal.Domain.Auditing;
 using SupportPortal.Domain.Authorization;
 using SupportPortal.Domain.Notifications;
@@ -10,17 +11,24 @@ namespace SupportPortal.Application.Notifications;
 public sealed class NotificationScheduler
 {
     private readonly IPortalStore store;
-    private readonly bool enabled;
+    private readonly bool? configuredEnabled;
+    private readonly RuntimeSettingsState? runtimeSettings;
 
     public NotificationScheduler(IPortalStore store, bool enabled)
     {
         this.store = store;
-        this.enabled = enabled;
+        configuredEnabled = enabled;
+    }
+
+    public NotificationScheduler(IPortalStore store, RuntimeSettingsState runtimeSettings)
+    {
+        this.store = store;
+        this.runtimeSettings = runtimeSettings;
     }
 
     public void ScheduleRequestCreated(SupportRequest request, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        if (!enabled || store.GetNotification(NotificationEventType.RequestCreated, request.SupportRequestId) is not null)
+        if (!IsEnabled || store.GetNotification(NotificationEventType.RequestCreated, request.SupportRequestId) is not null)
         {
             return;
         }
@@ -40,7 +48,7 @@ public sealed class NotificationScheduler
 
     public void ScheduleMessage(SupportRequest request, Message message, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        if (!enabled || store.GetNotification(GetMessageEventType(message.AuthorRole), message.MessageId) is not null)
+        if (!IsEnabled || store.GetNotification(GetMessageEventType(message.AuthorRole), message.MessageId) is not null)
         {
             return;
         }
@@ -61,7 +69,7 @@ public sealed class NotificationScheduler
 
     public void ScheduleInvitation(Invitation invitation, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        if (!enabled || store.GetNotification(NotificationEventType.InvitationCreated, invitation.InvitationId) is not null)
+        if (!IsEnabled || store.GetNotification(NotificationEventType.InvitationCreated, invitation.InvitationId) is not null)
         {
             return;
         }
@@ -108,4 +116,6 @@ public sealed class NotificationScheduler
         role is PortalRole.GlobalAdministrator or PortalRole.GlobalSupportUser
             ? NotificationEventType.GlobalSupportReply
             : NotificationEventType.TeamReply;
+
+    private bool IsEnabled => runtimeSettings?.Current.SendGrid.Enabled ?? configuredEnabled == true;
 }

@@ -38,7 +38,7 @@ public sealed class BrandingEndpointTests
         Assert.Equal("Northwind Support", payload.ProductName);
         Assert.Equal("Northwind Traders", payload.OrganizationName);
         Assert.Equal(brand.ProfileVersion, context.Response.Headers.ETag.ToString().Trim('"'));
-        Assert.Equal("public, max-age=300", context.Response.Headers.CacheControl.ToString());
+        Assert.Equal("public, max-age=30", context.Response.Headers.CacheControl.ToString());
         Assert.DoesNotContain("SendGrid", JsonSerializer.Serialize(payload), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apiKey", JsonSerializer.Serialize(payload), StringComparison.OrdinalIgnoreCase);
     }
@@ -55,7 +55,7 @@ public sealed class BrandingEndpointTests
         var response = Assert.IsType<StatusCodeResult>(result);
         Assert.Equal(StatusCodes.Status304NotModified, response.StatusCode);
         Assert.Equal($"\"{brand.ProfileVersion}\"", context.Response.Headers.ETag.ToString());
-        Assert.Equal("public, max-age=300", context.Response.Headers.CacheControl.ToString());
+        Assert.Equal("public, max-age=30", context.Response.Headers.CacheControl.ToString());
     }
 
     private static DefaultHttpContext CreateContext()
